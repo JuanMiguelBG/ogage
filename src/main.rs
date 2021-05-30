@@ -14,13 +14,14 @@ use mio::unix::SourceFd;
 static HOTKEY:      EventCode = EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY6);
 static BRIGHT_UP:   EventCode = EventCode::EV_KEY(EV_KEY::BTN_DPAD_UP);
 static BRIGHT_DOWN: EventCode = EventCode::EV_KEY(EV_KEY::BTN_DPAD_DOWN);
-static VOL_UP:      EventCode = EventCode::EV_KEY(EV_KEY::BTN_DPAD_RIGHT);
-static VOL_DOWN:    EventCode = EventCode::EV_KEY(EV_KEY::BTN_DPAD_LEFT);
-static MUTE:        EventCode = EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY5);
+static VOL_UP:      EventCode = EventCode::EV_KEY(EV_KEY::BTN_X);
+static VOL_DOWN:    EventCode = EventCode::EV_KEY(EV_KEY::BTN_B);
+static MUTE:        EventCode = EventCode::EV_KEY(EV_KEY::BTN_Y);
+static VOL_NORM:    EventCode = EventCode::EV_KEY(EV_KEY::BTN_A);
 static PERF_MAX:    EventCode = EventCode::EV_KEY(EV_KEY::BTN_TL2);
 static PERF_NORM:   EventCode = EventCode::EV_KEY(EV_KEY::BTN_TL);
-static DARK_ON:     EventCode = EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY3);
-static DARK_OFF:    EventCode = EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY4);
+static DARK_ON:     EventCode = EventCode::EV_KEY(EV_KEY::BTN_DPAD_RIGHT);
+static DARK_OFF:    EventCode = EventCode::EV_KEY(EV_KEY::BTN_DPAD_LEFT);
 static WIFI_ON:     EventCode = EventCode::EV_KEY(EV_KEY::BTN_TR);
 static WIFI_OFF:    EventCode = EventCode::EV_KEY(EV_KEY::BTN_TR2);
 static SUSPEND:     EventCode = EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY2);
@@ -72,6 +73,9 @@ fn process_event(_dev: &Device, ev: &InputEvent, hotkey: bool) {
         }
         else if ev.event_code == MUTE {
             Command::new("amixer").args(&["sset", "Playback", "0"]).output().expect("Failed to execute amixer");
+        }
+        else if ev.event_code == VOL_NORM {
+            Command::new("amixer").args(&["sset", "Playback", "50"]).output().expect("Failed to execute amixer");
         }
         else if ev.event_code == PERF_MAX {
             Command::new("perfmax").arg("none").output().expect("Failed to execute performance");
