@@ -1,6 +1,6 @@
-## RGB10 Max - Native
+## RGB10 Max - Top
 ![](https://github.com/southoz/RetroOZ/blob/main/wiki/images/Buttons_RGB10_Max.png)
-### Hotkey - 13
+### Hotkey - 15
 * 0 (B Button) - Volume Up
 * 1 (A Button) - Volume 75%
 * 2 (X Button) - Volume Down
@@ -13,7 +13,7 @@
 * 9 (D-Pad Down) - Brightness Down
 * 10 (D-Pad Left) - Brightness 10%
 * 11 (D-Pad Right) - Brightness 50%
-* 15 (Start) - Sleep
+* 13 (Start) - Sleep
 
 Prequisites
 ===========
