@@ -1,23 +1,19 @@
-# ogage for OGS
-
-Includes Brightness Control, Volume Control, Mute, Brightness 10%, Brightness 50%, Perfnorm, perfmaxm, Wifi On, Wifi Off and Standby
-
-HotKey - 17
-Brightness Up - 8
-Brightness Down - 9
-Brightness 10% - 14
-Brightness 50% - 15
-Volume Up - 11
-Volume Down 10
-Mute - 16
-Perfnorm - 4
-Perfmax - 6
-Wifi Off - 7
-Wifi On - 5
-Suspend - 13
-
-![image](https://user-images.githubusercontent.com/20381196/113501670-5b8d7000-956a-11eb-8707-132d909a2ec5.png)
-
+## Odroid Go Super
+![](https://github.com/southoz/RetroOZ/blob/main/wiki/images/Buttons_OGS.png)
+### Hotkey - 17
+* 0 (B Button) - Volume Up
+* 1 (A Button) - Volume 75%
+* 2 (X Button) - Volume Down
+* 1 (Y Button) - Volume Mute
+* 4 (L1 Button) - Performance Normal
+* 6 (L2 Button) - Performance Max
+* 5 (R2 Button) - Wifi On
+* 7 (R2 Button) - Wifi Off
+* 8 (D-Pad Up) - Brightness Up
+* 9 (D-Pad Down) - Brightness Down
+* 10 (D-Pad Left) - Brightness 10%
+* 11 (D-Pad Right) - Brightness 50%
+* 13 (Start) - Sleep
 
 Prequisites
 ===========
