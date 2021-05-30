@@ -11,7 +11,7 @@ use std::os::unix::io::AsRawFd;
 use mio::{Poll,Events,Token,Interest};
 use mio::unix::SourceFd;
 
-static HOTKEY:      EventCode = EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY2);
+static HOTKEY:      EventCode = EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY4);
 static BRIGHT_UP:   EventCode = EventCode::EV_KEY(EV_KEY::BTN_DPAD_UP);
 static BRIGHT_DOWN: EventCode = EventCode::EV_KEY(EV_KEY::BTN_DPAD_DOWN);
 static VOL_UP:      EventCode = EventCode::EV_KEY(EV_KEY::BTN_NORTH);
@@ -24,7 +24,7 @@ static DARK_ON:     EventCode = EventCode::EV_KEY(EV_KEY::BTN_DPAD_LEFT);
 static DARK_OFF:    EventCode = EventCode::EV_KEY(EV_KEY::BTN_DPAD_RIGHT);
 static WIFI_ON:     EventCode = EventCode::EV_KEY(EV_KEY::BTN_TR);
 static WIFI_OFF:    EventCode = EventCode::EV_KEY(EV_KEY::BTN_TR2);
-static SUSPEND:     EventCode = EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY4);
+static SUSPEND:     EventCode = EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY2);
 
 fn blinkon() {
 
