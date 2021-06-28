@@ -1,5 +1,5 @@
 ## Odroid Go Super
-![](https://github.com/southoz/RetroOZ/blob/main/wiki/images/Buttons_OGS.png)
+![](https://github.com/southoz/RetroOZ/blob/main/wiki/images/Buttons_OGA.png)
 ### Hotkey - 17
 * 0 (B Button) - Volume Up
 * 1 (A Button) - Volume 75%
