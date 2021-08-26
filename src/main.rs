@@ -23,8 +23,9 @@ static WIFI_OFF:    EventCode = EventCode::EV_KEY(EV_KEY::BTN_TR2);
 
 lazy_static! {
     static ref DEVICE: &'static str = {
-        let lines = fs::read_to_string("/opt/.retrooz/device").expect("Can't read file '/opt/.retrooz/device'.");
-        if lines.trim().is_empty() {
+        let mut lines = fs::read_to_string("/opt/.retrooz/device").expect("Can't read file '/opt/.retrooz/device'.");
+        lines = lines.trim_end_matches(&['\r', '\n'][..]).to_string();
+        if lines.is_empty() {
             return "rgb10maxtop";
         }
         Box::leak(lines.into_boxed_str())
@@ -188,15 +189,20 @@ fn suspend() {
 }
 
 fn process_event(_dev: &Device, ev: &InputEvent, hotkey: bool) {
-    println!("Event: time {}.{} type {} code {} value {} hotkey {}",
+/*    println!("Event: time {}.{} type {} code {} value {} hotkey {}",
              ev.time.tv_sec,
              ev.time.tv_usec,
              ev.event_type,
              ev.event_code,
              ev.value,
-             hotkey);
+             hotkey);*/
 
     if ev.value == 1 {
+/*        println!("Event: time {}.{} type {} code {} value {} hotkey {}",
+        ev.time.tv_sec, ev.time.tv_usec, ev.event_type, ev.event_code,
+        ev.value, hotkey);
+        println!("Device: {}", *DEVICE);*/
+
         if hotkey {
             if *DEVICE != "oga1" {
                 if ev.event_code == *BRIGHT_UP {
@@ -265,7 +271,6 @@ fn main() -> io::Result<()> {
 
     println!("Device: {}", *DEVICE);
 
-
     let mut i = 0;
     for s in ["/dev/input/event3", "/dev/input/event2", "/dev/input/event0", "/dev/input/event1"].iter() {
         if !Path::new(s).exists() {
@@ -291,8 +296,10 @@ fn main() -> io::Result<()> {
                 match e {
                     Ok(k) => {
                         let ev = &k.1;
+                        //println!("Hotkey: {} - {} - {}", *HOTKEY, ev.event_code, hotkey);
                         if ev.event_code == *HOTKEY {
                             hotkey = ev.value == 1;
+                            //println!("Hotkey: {} - {}", *HOTKEY, hotkey);
                             //let grab = if hotkey { GrabMode::Grab } else { GrabMode::Ungrab };
                             //dev.grab(grab)?;
                         }
