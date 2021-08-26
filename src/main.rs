@@ -1,3 +1,5 @@
+#[macro_use]
+extern crate lazy_static;
 extern crate evdev_rs as evdev;
 extern crate mio;
 
@@ -10,21 +12,93 @@ use std::process::{Command, Stdio};
 use std::os::unix::io::AsRawFd;
 use mio::{Poll,Events,Token,Interest};
 use mio::unix::SourceFd;
+use std::fs;
 
-static HOTKEY:      EventCode = EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY6);
-static BRIGHT_UP:   EventCode = EventCode::EV_KEY(EV_KEY::BTN_DPAD_UP);
-static BRIGHT_DOWN: EventCode = EventCode::EV_KEY(EV_KEY::BTN_DPAD_DOWN);
-static VOL_UP:      EventCode = EventCode::EV_KEY(EV_KEY::BTN_NORTH);
-static VOL_DOWN:    EventCode = EventCode::EV_KEY(EV_KEY::BTN_SOUTH);
-static MUTE:        EventCode = EventCode::EV_KEY(EV_KEY::BTN_WEST);
-static VOL_NORM:    EventCode = EventCode::EV_KEY(EV_KEY::BTN_EAST);
 static PERF_MAX:    EventCode = EventCode::EV_KEY(EV_KEY::BTN_TL2);
 static PERF_NORM:   EventCode = EventCode::EV_KEY(EV_KEY::BTN_TL);
 static DARK_ON:     EventCode = EventCode::EV_KEY(EV_KEY::BTN_DPAD_LEFT);
 static DARK_OFF:    EventCode = EventCode::EV_KEY(EV_KEY::BTN_DPAD_RIGHT);
 static WIFI_ON:     EventCode = EventCode::EV_KEY(EV_KEY::BTN_TR);
 static WIFI_OFF:    EventCode = EventCode::EV_KEY(EV_KEY::BTN_TR2);
-static SUSPEND:     EventCode = EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY2);
+
+lazy_static! {
+    static ref DEVICE:&'static str = {
+        let lines = fs::read_to_string("/opt/.retrooz/device").expect("Can't read file '/opt/.retrooz/device'.");
+        if (lines.trim().is_empty()) {
+            return "rgb10maxtop";
+        }
+
+        lines
+    };
+
+    static ref HOTKEY: EventCode = {
+        if (DEVICE == "rgb10maxtop")
+            return EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY4);
+        else if(DEVICE == "rgb10maxnative")
+            return EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY2);
+
+        //if (DEVICE == "ogs") or (DEVICE == "oga") or (DEVICE == "oga1")
+        EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY6)
+    };
+
+    static ref BRIGHT_UP:   EventCode = {
+        if (DEVICE == "oga1")
+            return EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY5);
+
+        //if (DEVICE == "ogs") or (DEVICE == "oga") or (DEVICE == "rgb10maxtop") or (DEVICE == "rgb10maxnative")
+        EventCode::EV_KEY(EV_KEY::BTN_DPAD_UP)
+    };
+
+    static ref BRIGHT_DOWN: EventCode = {
+        if (DEVICE == "oga1")
+            return EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY4);
+
+        //if (DEVICE == "ogs") or (DEVICE == "oga") or (DEVICE == "rgb10maxtop") or (DEVICE == "rgb10maxnative")
+        EventCode::EV_KEY(EV_KEY::BTN_DPAD_DOWN)
+    };
+
+    static ref VOL_UP:      EventCode = {
+        if (DEVICE == "oga1")
+            return EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY3);
+
+        //if (DEVICE == "ogs") or (DEVICE == "oga") or (DEVICE == "rgb10maxtop") or (DEVICE == "rgb10maxnative")
+        EventCode::EV_KEY(EV_KEY::BTN_NORTH)
+    };
+
+    static ref VOL_DOWN:    EventCode = {
+        if (DEVICE == "oga1")
+            return EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY2);
+
+        //if (DEVICE == "ogs") or (DEVICE == "oga") or (DEVICE == "rgb10maxtop") or (DEVICE == "rgb10maxnative")
+        EventCode::EV_KEY(EV_KEY::BTN_SOUTH)
+    };
+
+    static ref MUTE:        EventCode = {
+        if (DEVICE == "oga1")
+            return EventCode::EV_KEY(EV_KEY::BTN_DPAD_DOWN);
+
+        //if (DEVICE == "ogs") or (DEVICE == "oga") or (DEVICE == "rgb10maxtop") or (DEVICE == "rgb10maxnative")
+        EventCode::EV_KEY(EV_KEY::BTN_WEST)
+    };
+
+    static ref VOL_NORM:    EventCode = {
+        if (DEVICE == "oga1")
+            return EventCode::EV_KEY(EV_KEY::BTN_DPAD_UP);
+
+        //if (DEVICE == "ogs") or (DEVICE == "oga") or (DEVICE == "rgb10maxtop") or (DEVICE == "rgb10maxnative")
+        EventCode::EV_KEY(EV_KEY::BTN_EAST)
+    };
+
+    static ref SUSPEND:     EventCode = {
+        if (DEVICE == "oga1")
+            return EventCode::EV_KEY(EV_KEY::BTN_NORTH);
+        else if (DEVICE == "rgb10maxnative")
+            return EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY4);
+
+        //if (DEVICE == "ogs") or (DEVICE == "oga") or (DEVICE == "rgb10maxtop")
+        EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY2);
+    };
+}
 
 fn blinkon() {
 
@@ -48,6 +122,61 @@ fn blinkoff() {
     Command::new("brightnessctl").arg("s").arg(current).output().expect("Failed to execute brightnessctl");
 }
 
+fn inc_brightness() {
+    Command::new("brightnessctl").args(&["s","+2%"]).output().expect("Failed to execute brightnessctl");
+}
+
+fn dec_brightness() {
+    Command::new("brightnessctl").args(&["-n","s","2%-"]).output().expect("Failed to execute brightnessctl");
+}
+
+fn inc_volume() {
+    Command::new("amixer").args(&["-q", "sset", "Playback", "1%+"]).output().expect("Failed to execute amixer");
+}
+
+fn dec_volume() {
+    Command::new("amixer").args(&["-q", "sset", "Playback", "1%-"]).output().expect("Failed to execute amixer");
+}
+
+fn mute_volume() {
+    Command::new("amixer").args(&["sset", "Playback", "0"]).output().expect("Failed to execute amixer");
+}
+
+fn norm_volume() {
+    Command::new("amixer").args(&["sset", "Playback", "180"]).output().expect("Failed to execute amixer");
+}
+
+fn perf_max() {
+    Command::new("perfmax").arg("none").output().expect("Failed to execute performance");
+    blinkon();
+}
+
+fn perf_norm() {
+    Command::new("perfnorm").arg("none").output().expect("Failed to execute performance");
+    blinkoff();
+}
+
+fn dark_on() {
+    Command::new("brightnessctl").args(&["s","10%"]).output().expect("Failed to execute brightnessctl");
+}
+
+fn dark_off() {
+    Command::new("brightnessctl").args(&["s","50%"]).output().expect("Failed to execute brightnessctl");
+}
+
+fn wifi_on() {
+    blinkon();
+    Command::new("nmcli").args(&["radio","wifi","on"]).output().expect("Failed to execute wifi on");
+}
+
+fn wifi_off() {
+    Command::new("nmcli").args(&["radio","wifi","off"]).output().expect("Failed to execute wifi off");
+    blinkoff();
+}
+
+fn suspend() {
+    Command::new("sudo").args(&["systemctl", "suspend"]).output().expect("Failed to execute power off");
+}
 
 fn process_event(_dev: &Device, ev: &InputEvent, hotkey: bool) {
     /*println!("Event: time {}.{} type {} code {} value {} hotkey {}",
@@ -58,51 +187,65 @@ fn process_event(_dev: &Device, ev: &InputEvent, hotkey: bool) {
              ev.value,
              hotkey);*/
 
-    if hotkey && ev.value == 1 {
-        if ev.event_code == BRIGHT_UP {
-            Command::new("brightnessctl").args(&["s","+2%"]).output().expect("Failed to execute brightnessctl");
+    if (ev.value == 1) {
+        if hotkey {
+            if (DEVICE != "oga1") {
+                if ev.event_code == BRIGHT_UP {
+                    inc_brightness();
+                }
+                else if ev.event_code == BRIGHT_DOWN {
+                    dec_brightness();
+                }
+                else if ev.event_code == VOL_UP {
+                    inc_volume();
+                }
+                else if ev.event_code == VOL_DOWN {
+                    dec_volume();
+                }
+            }
+            if ev.event_code == MUTE {
+                mute_volume();
+            }
+            else if ev.event_code == VOL_NORM {
+                norm_volume();
+            }
+            else if ev.event_code == PERF_MAX {
+                perf_max();
+            }
+            else if ev.event_code == PERF_NORM {
+                perf_norm();
+            }
+            else if ev.event_code == DARK_ON {
+                dark_on();
+            }
+            else if ev.event_code == DARK_OFF {
+                dark_off();
+            }
+            else if ev.event_code == WIFI_ON {
+                wifi_on();
+            }
+            else if ev.event_code == WIFI_OFF {
+                wifi_off();
+            }
+            else if ev.event_code == SUSPEND {
+                suspend();
+            }
         }
-        else if ev.event_code == BRIGHT_DOWN {
-            Command::new("brightnessctl").args(&["-n","s","2%-"]).output().expect("Failed to execute brightnessctl");
-        }
-        else if ev.event_code == VOL_UP {
-            Command::new("amixer").args(&["-q", "sset", "Playback", "1%+"]).output().expect("Failed to execute amixer");
-        }
-        else if ev.event_code == VOL_DOWN {
-            Command::new("amixer").args(&["-q", "sset", "Playback", "1%-"]).output().expect("Failed to execute amixer");
-        }
-        else if ev.event_code == MUTE {
-            Command::new("amixer").args(&["sset", "Playback", "0"]).output().expect("Failed to execute amixer");
-        }
-        else if ev.event_code == VOL_NORM {
-            Command::new("amixer").args(&["sset", "Playback", "180"]).output().expect("Failed to execute amixer");
-        }
-        else if ev.event_code == PERF_MAX {
-            Command::new("perfmax").arg("none").output().expect("Failed to execute performance");
-            blinkon();
-        }
-        else if ev.event_code == PERF_NORM {
-            Command::new("perfnorm").arg("none").output().expect("Failed to execute performance");
-            blinkoff();
-        }
-        else if ev.event_code == DARK_ON {
-            Command::new("brightnessctl").args(&["s","10%"]).output().expect("Failed to execute brightnessctl");
-        }
-        else if ev.event_code == DARK_OFF {
-            Command::new("brightnessctl").args(&["s","50%"]).output().expect("Failed to execute brightnessctl");
-        }
-        else if ev.event_code == WIFI_ON {
-            blinkon();
-            Command::new("nmcli").args(&["radio","wifi","on"]).output().expect("Failed to execute wifi on");
-        }
-        else if ev.event_code == WIFI_OFF {
-            Command::new("nmcli").args(&["radio","wifi","off"]).output().expect("Failed to execute wifi off");
-            blinkoff();
-        }
-        else if ev.event_code == SUSPEND {
-            Command::new("sudo").args(&["systemctl", "suspend"]).output().expect("Failed to execute power off");
-        }
-    }
+        else if (DEVICE == "oga1") {
+            if ev.event_code == BRIGHT_DOWN {
+                dec_brightness();
+            }
+            else if ev.event_code == BRIGHT_UP {
+                inc_brightness();
+            }
+            else if ev.event_code == VOL_UP && {
+                inc_volume();
+            }
+            else if ev.event_code == VOL_DOWN {
+                dec_volume();
+            } 
+		}
+	}
 }
 
 fn main() -> io::Result<()> {
