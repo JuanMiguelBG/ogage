@@ -22,81 +22,90 @@ static WIFI_ON:     EventCode = EventCode::EV_KEY(EV_KEY::BTN_TR);
 static WIFI_OFF:    EventCode = EventCode::EV_KEY(EV_KEY::BTN_TR2);
 
 lazy_static! {
-    static ref DEVICE:&'static str = {
+    static ref DEVICE: &'static str = {
         let lines = fs::read_to_string("/opt/.retrooz/device").expect("Can't read file '/opt/.retrooz/device'.");
-        if (lines.trim().is_empty()) {
+        if lines.trim().is_empty() {
             return "rgb10maxtop";
         }
-
-        lines
+        Box::leak(lines.into_boxed_str())
     };
 
     static ref HOTKEY: EventCode = {
-        if (DEVICE == "rgb10maxtop")
+        if *DEVICE == "rgb10maxtop" {
             return EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY4);
-        else if(DEVICE == "rgb10maxnative")
+        }
+        else if *DEVICE == "rgb10maxnative" {
             return EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY2);
+        }
 
         //if (DEVICE == "ogs") or (DEVICE == "oga") or (DEVICE == "oga1")
         EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY6)
     };
 
     static ref BRIGHT_UP:   EventCode = {
-        if (DEVICE == "oga1")
+        if *DEVICE == "oga1" {
             return EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY5);
+        }
 
         //if (DEVICE == "ogs") or (DEVICE == "oga") or (DEVICE == "rgb10maxtop") or (DEVICE == "rgb10maxnative")
         EventCode::EV_KEY(EV_KEY::BTN_DPAD_UP)
     };
 
     static ref BRIGHT_DOWN: EventCode = {
-        if (DEVICE == "oga1")
+        if *DEVICE == "oga1" {
             return EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY4);
+        }
 
         //if (DEVICE == "ogs") or (DEVICE == "oga") or (DEVICE == "rgb10maxtop") or (DEVICE == "rgb10maxnative")
         EventCode::EV_KEY(EV_KEY::BTN_DPAD_DOWN)
     };
 
     static ref VOL_UP:      EventCode = {
-        if (DEVICE == "oga1")
+        if *DEVICE == "oga1" {
             return EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY3);
+        }
 
         //if (DEVICE == "ogs") or (DEVICE == "oga") or (DEVICE == "rgb10maxtop") or (DEVICE == "rgb10maxnative")
         EventCode::EV_KEY(EV_KEY::BTN_NORTH)
     };
 
     static ref VOL_DOWN:    EventCode = {
-        if (DEVICE == "oga1")
+        if *DEVICE == "oga1" {
             return EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY2);
+        }
 
         //if (DEVICE == "ogs") or (DEVICE == "oga") or (DEVICE == "rgb10maxtop") or (DEVICE == "rgb10maxnative")
         EventCode::EV_KEY(EV_KEY::BTN_SOUTH)
     };
 
     static ref MUTE:        EventCode = {
-        if (DEVICE == "oga1")
+        if *DEVICE == "oga1" {
             return EventCode::EV_KEY(EV_KEY::BTN_DPAD_DOWN);
+        }
 
         //if (DEVICE == "ogs") or (DEVICE == "oga") or (DEVICE == "rgb10maxtop") or (DEVICE == "rgb10maxnative")
         EventCode::EV_KEY(EV_KEY::BTN_WEST)
     };
 
     static ref VOL_NORM:    EventCode = {
-        if (DEVICE == "oga1")
+        if *DEVICE == "oga1" {
             return EventCode::EV_KEY(EV_KEY::BTN_DPAD_UP);
+        }
 
         //if (DEVICE == "ogs") or (DEVICE == "oga") or (DEVICE == "rgb10maxtop") or (DEVICE == "rgb10maxnative")
         EventCode::EV_KEY(EV_KEY::BTN_EAST)
     };
 
     static ref SUSPEND:     EventCode = {
-        if (DEVICE == "oga1")
+        if *DEVICE == "oga1" {
             return EventCode::EV_KEY(EV_KEY::BTN_NORTH);
-        else if (DEVICE == "rgb10maxnative")
+        }
+        else if *DEVICE == "rgb10maxnative" {
             return EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY4);
+        }
 
         //if (DEVICE == "ogs") or (DEVICE == "oga") or (DEVICE == "rgb10maxtop")
-        EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY2);
+        EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY2)
     };
 }
 
@@ -179,34 +188,34 @@ fn suspend() {
 }
 
 fn process_event(_dev: &Device, ev: &InputEvent, hotkey: bool) {
-    /*println!("Event: time {}.{} type {} code {} value {} hotkey {}",
+    println!("Event: time {}.{} type {} code {} value {} hotkey {}",
              ev.time.tv_sec,
              ev.time.tv_usec,
              ev.event_type,
              ev.event_code,
              ev.value,
-             hotkey);*/
+             hotkey);
 
-    if (ev.value == 1) {
+    if ev.value == 1 {
         if hotkey {
-            if (DEVICE != "oga1") {
-                if ev.event_code == BRIGHT_UP {
+            if *DEVICE != "oga1" {
+                if ev.event_code == *BRIGHT_UP {
                     inc_brightness();
                 }
-                else if ev.event_code == BRIGHT_DOWN {
+                else if ev.event_code == *BRIGHT_DOWN {
                     dec_brightness();
                 }
-                else if ev.event_code == VOL_UP {
+                else if ev.event_code == *VOL_UP {
                     inc_volume();
                 }
-                else if ev.event_code == VOL_DOWN {
+                else if ev.event_code == *VOL_DOWN {
                     dec_volume();
                 }
             }
-            if ev.event_code == MUTE {
+            if ev.event_code == *MUTE {
                 mute_volume();
             }
-            else if ev.event_code == VOL_NORM {
+            else if ev.event_code == *VOL_NORM {
                 norm_volume();
             }
             else if ev.event_code == PERF_MAX {
@@ -227,21 +236,21 @@ fn process_event(_dev: &Device, ev: &InputEvent, hotkey: bool) {
             else if ev.event_code == WIFI_OFF {
                 wifi_off();
             }
-            else if ev.event_code == SUSPEND {
+            else if ev.event_code == *SUSPEND {
                 suspend();
             }
         }
-        else if (DEVICE == "oga1") {
-            if ev.event_code == BRIGHT_DOWN {
+        else if *DEVICE == "oga1" {
+            if ev.event_code == *BRIGHT_DOWN {
                 dec_brightness();
             }
-            else if ev.event_code == BRIGHT_UP {
+            else if ev.event_code == *BRIGHT_UP {
                 inc_brightness();
             }
-            else if ev.event_code == VOL_UP && {
+            else if ev.event_code == *VOL_UP {
                 inc_volume();
             }
-            else if ev.event_code == VOL_DOWN {
+            else if ev.event_code == *VOL_DOWN {
                 dec_volume();
             } 
 		}
@@ -253,6 +262,9 @@ fn main() -> io::Result<()> {
     let mut events = Events::with_capacity(1);
     let mut devs: Vec<Device> = Vec::new();
     let mut hotkey = false;
+
+    println!("Device: {}", *DEVICE);
+
 
     let mut i = 0;
     for s in ["/dev/input/event3", "/dev/input/event2", "/dev/input/event0", "/dev/input/event1"].iter() {
@@ -279,7 +291,7 @@ fn main() -> io::Result<()> {
                 match e {
                     Ok(k) => {
                         let ev = &k.1;
-                        if ev.event_code == HOTKEY {
+                        if ev.event_code == *HOTKEY {
                             hotkey = ev.value == 1;
                             //let grab = if hotkey { GrabMode::Grab } else { GrabMode::Ungrab };
                             //dev.grab(grab)?;
