@@ -15,6 +15,8 @@
 * 11 (D-Pad Right) - Brightness 50%
 * 13 (Start) - Sleep
 
+-----
+
 ## Odroid Go Advance
 ![](https://github.com/southoz/RetroOZ/blob/main/wiki/images/Buttons_OGA.png)
 * 13 - Volume Down
@@ -32,6 +34,8 @@
 * 10 (D-Pad Left) - Brightness 10%
 * 11 (D-Pad Right) - Brightness 50%
 
+-----
+
 ## RGB10 Max - Top
 ![](https://github.com/southoz/RetroOZ/blob/main/wiki/images/Buttons_RGB10_Max.png)
 ### Hotkey - 15
@@ -48,6 +52,8 @@
 * 10 (D-Pad Left) - Brightness 10%
 * 11 (D-Pad Right) - Brightness 50%
 * 13 (Start) - Sleep
+
+-----
 
 ## RGB10 Max - Native
 ![](https://github.com/southoz/RetroOZ/blob/main/wiki/images/Buttons_RGB10_Max.png)
@@ -68,9 +74,20 @@
 
 Prequisites
 ===========
+You need at least Rust version 1.5.1. If you use Christians pre built virtual machine image with a chroot for arm64 https://forum.odroid.com/viewtopic.php?p=306185#p306185 use
+
 ```
-sudo apt install brightnessctl rustc autotools-dev automake libtool libtool-bin libevdev-dev
+apt install brightnessctl autotools-dev automake libtool libtool-bin libevdev-dev
 ```
+
+and download and install
+
+```
+https://static.rust-lang.org/rustup/dist/aarch64-unknown-linux-gnu/rustup-init
+```
+
+Select platform "aarch64-unknown-linux-gnu", version "stable" and "minimal".
+
 
 Build
 =====
@@ -80,4 +97,5 @@ cd ogage
 cargo build --release
 strip target/release/ogage
 ```
+
 ogage executable will be in the target/release folder.
