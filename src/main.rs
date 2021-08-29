@@ -31,6 +31,14 @@ lazy_static! {
         Box::leak(lines.into_boxed_str())
     };
 
+    static ref IS_OGA1: bool = {
+        if *DEVICE == "oga1" {
+            return true;
+        }
+
+        false
+    };
+
     static ref HOTKEY: EventCode = {
         if *DEVICE == "rgb10maxtop" {
             return EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY4);
@@ -44,7 +52,7 @@ lazy_static! {
     };
 
     static ref BRIGHT_UP:   EventCode = {
-        if *DEVICE == "oga1" {
+        if *IS_OGA1 {
             return EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY5);
         }
 
@@ -53,7 +61,7 @@ lazy_static! {
     };
 
     static ref BRIGHT_DOWN: EventCode = {
-        if *DEVICE == "oga1" {
+        if *IS_OGA1 {
             return EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY4);
         }
 
@@ -62,7 +70,7 @@ lazy_static! {
     };
 
     static ref VOL_UP:      EventCode = {
-        if *DEVICE == "oga1" {
+        if *IS_OGA1 {
             return EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY3);
         }
 
@@ -71,7 +79,7 @@ lazy_static! {
     };
 
     static ref VOL_DOWN:    EventCode = {
-        if *DEVICE == "oga1" {
+        if *IS_OGA1 {
             return EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY2);
         }
 
@@ -80,7 +88,7 @@ lazy_static! {
     };
 
     static ref MUTE:        EventCode = {
-        if *DEVICE == "oga1" {
+        if *IS_OGA1 {
             return EventCode::EV_KEY(EV_KEY::BTN_DPAD_DOWN);
         }
 
@@ -89,7 +97,7 @@ lazy_static! {
     };
 
     static ref VOL_NORM:    EventCode = {
-        if *DEVICE == "oga1" {
+        if *IS_OGA1 {
             return EventCode::EV_KEY(EV_KEY::BTN_DPAD_UP);
         }
 
@@ -98,7 +106,7 @@ lazy_static! {
     };
 
     static ref SUSPEND:     EventCode = {
-        if *DEVICE == "oga1" {
+        if *IS_OGA1 {
             return EventCode::EV_KEY(EV_KEY::BTN_NORTH);
         }
         else if *DEVICE == "rgb10maxnative" {
@@ -204,7 +212,7 @@ fn process_event(_dev: &Device, ev: &InputEvent, hotkey: bool) {
         println!("Device: {}", *DEVICE);*/
 
         if hotkey {
-            if *DEVICE != "oga1" {
+            if !*IS_OGA1 {
                 if ev.event_code == *BRIGHT_UP {
                     inc_brightness();
                 }
@@ -246,7 +254,7 @@ fn process_event(_dev: &Device, ev: &InputEvent, hotkey: bool) {
                 suspend();
             }
         }
-        else if *DEVICE == "oga1" {
+        else if *IS_OGA1 {
             if ev.event_code == *BRIGHT_DOWN {
                 dec_brightness();
             }
