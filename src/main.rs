@@ -320,7 +320,7 @@ fn process_event(_dev: &Device, ev: &InputEvent, hotkey: bool, _first_push_power
 		}
         else if ev.event_code == POWER_OFF && *IS_DOUBLE_PUSH_POWER_OFF_ACTIVE {
             let diff = ev.time.tv_sec - _first_push_power_off;
-            println!("ev.time.tv_sec: {} - _first_push_power_off: {} = {}", ev.time.tv_sec, _first_push_power_off, diff);
+            //println!("ev.time.tv_sec: {} - _first_push_power_off: {} = {}", ev.time.tv_sec, _first_push_power_off, diff);
             if diff >= MIN_POWERKEY_DELAY && diff < *MAX_POWERKEY_DELAY { // two push in one second
                 power_off();
             }
