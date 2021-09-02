@@ -1,6 +1,6 @@
 [package]
 name = "ogage"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["valadaa48 <valadaa48@gmx.com>"]
 edition = "2018"
 
@@ -14,4 +14,6 @@ panic = 'abort'
 evdev-rs = "0.4.0"
 mio = { version = "0.7", features = ["os-poll", "os-util"]}
 lazy_static = "1.4.0"
+props-rs = "0.1.0"
+libc = "0.2"
 
