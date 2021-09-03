@@ -25,15 +25,18 @@ static DARK_OFF:    EventCode = EventCode::EV_KEY(EV_KEY::BTN_DPAD_RIGHT);
 static WIFI_ON:     EventCode = EventCode::EV_KEY(EV_KEY::BTN_TR);
 static WIFI_OFF:    EventCode = EventCode::EV_KEY(EV_KEY::BTN_TR2);
 static POWER_OFF:   EventCode = EventCode::EV_KEY(EV_KEY::KEY_POWER);
-static MIN_POWERKEY_DELAY: time_t = 1;
+static MIN_POWERKEY_ELAPSED: time_t = 1;
 
 lazy_static! {
     static ref DEVICE: &'static str = {
-        let lines = fs::read_to_string("/opt/.retrooz/device").expect("Can't read file '/opt/.retrooz/device'.").trim_end_matches(&['\r', '\n'][..]).to_string();
-        if lines.is_empty() {
-            return "rgb10maxtop";
+        if Path::new("/opt/.retrooz/device").exists() {
+            let lines = fs::read_to_string("/opt/.retrooz/device").expect("Can't read file '/opt/.retrooz/device'.").trim_end_matches(&['\r', '\n'][..]).to_string();
+            if !lines.is_empty() {
+                return Box::leak(lines.into_boxed_str());
+            }
         }
-        Box::leak(lines.into_boxed_str())
+        
+        "rgb10maxtop"
     };
 
     static ref IS_OGA1: bool = {
@@ -123,14 +126,18 @@ lazy_static! {
     };
 
     static ref POWERKEY_PROPERTIES: HashMap<String, String> = {
-        let lines = fs::read_to_string("/usr/local/etc/powerkey.conf").expect("Can't read file '/usr/local/etc/powerkey.conf'.");
-        let parsed = parse(lines.as_bytes()).expect("Can't parse properties of '/usr/local/etc/powerkey.conf'");
+        if Path::new("/usr/local/etc/powerkey.conf").exists() {
+            let lines = fs::read_to_string("/usr/local/etc/powerkey.conf").expect("Can't read file '/usr/local/etc/powerkey.conf'.");
+            let parsed = parse(lines.as_bytes()).expect("Can't parse properties of '/usr/local/etc/powerkey.conf'");
         
-        to_map(parsed)
+            return to_map(parsed);
+        }
+
+        HashMap::new()
     };
 
     static ref IS_DOUBLE_PUSH_POWER_OFF_ACTIVE: bool = {       
-        println!("POWERKEY_PROPERTIES: {}", POWERKEY_PROPERTIES.len());
+        println!("POWERKEY_PROPERTIES:");
         for (key, value) in POWERKEY_PROPERTIES.iter() {
             println!("{} / {}", key, value);
         }
@@ -149,10 +156,10 @@ lazy_static! {
         false
     };
 
-    static ref MAX_POWERKEY_DELAY: time_t = {
+    static ref MAX_POWERKEY_INTERVAL_TIME: time_t = {
         if !POWERKEY_PROPERTIES.is_empty() {
-            match POWERKEY_PROPERTIES.get("max_delay_time") {
-                Some(x) => return x.parse::<i64>().unwrap(),
+            match POWERKEY_PROPERTIES.get("max_interval_time") {
+                Some(x) => return x.parse::<i64>().unwrap() + MIN_POWERKEY_ELAPSED,
                 None => return 2,
             };
         }
@@ -330,9 +337,8 @@ fn main() -> io::Result<()> {
     let mut sec_first_push_power_off: time_t = 0;
     let mut usec_first_push_power_off: suseconds_t = 0;
 
-    println!("Device: {}", *DEVICE);
-    println!("Is OGA v1.1: {}", *IS_OGA1);
-    println!("Is double push power off button active?: {}", *IS_DOUBLE_PUSH_POWER_OFF_ACTIVE);
+    println!("Device: {}\nIs OGA v1.1?: {}\nIs double push power off button active?: {}\nPOWERKEY interval time: {}",
+             *DEVICE, *IS_OGA1, *IS_DOUBLE_PUSH_POWER_OFF_ACTIVE, *MAX_POWERKEY_INTERVAL_TIME);
 
     let mut i = 0;
     for s in ["/dev/input/event3", "/dev/input/event2", "/dev/input/event0", "/dev/input/event1"].iter() {
@@ -345,7 +351,7 @@ fn main() -> io::Result<()> {
         poll.registry().register(&mut SourceFd(&fd.as_raw_fd()), Token(i), Interest::READABLE)?;
         dev.set_fd(fd)?;
         devs.push(dev);
-        println!("Added {}", s);
+        println!("Added device {}", s);
         i += 1;
     }
 
@@ -386,7 +392,7 @@ fn main() -> io::Result<()> {
 
                             sec_first_push_power_off = ev.time.tv_sec;
                             usec_first_push_power_off = ev.time.tv_usec;
-                            if sec_diff >= MIN_POWERKEY_DELAY && sec_diff < *MAX_POWERKEY_DELAY { // two push in one second
+                            if sec_diff >= MIN_POWERKEY_ELAPSED && sec_diff <= *MAX_POWERKEY_INTERVAL_TIME { // two push at least in more than one second
                                 power_off();
                             }
                         }
