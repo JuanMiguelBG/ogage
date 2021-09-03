@@ -15,6 +15,7 @@ use mio::unix::SourceFd;
 use std::fs;
 use props_rs::*;
 use libc::time_t;
+use libc::suseconds_t;
 use std::collections::HashMap;
 
 static PERF_MAX:    EventCode = EventCode::EV_KEY(EV_KEY::BTN_TL2);
@@ -241,7 +242,7 @@ fn power_off() {
     Command::new("sudo").args(&["shutdown", "-h", "now"]).output().expect("Failed to execute power off");
 }
 
-fn process_event(_dev: &Device, ev: &InputEvent, hotkey: bool, _first_push_power_off: time_t) {
+fn process_event(_dev: &Device, ev: &InputEvent, hotkey: bool) {
 /*
         println!("Event: time {}.{} type {} code {} value {} hotkey {}",
              ev.time.tv_sec,
@@ -318,13 +319,6 @@ fn process_event(_dev: &Device, ev: &InputEvent, hotkey: bool, _first_push_power
                 dec_volume();
             } 
 		}
-        else if ev.event_code == POWER_OFF && *IS_DOUBLE_PUSH_POWER_OFF_ACTIVE {
-            let diff = ev.time.tv_sec - _first_push_power_off;
-            //println!("ev.time.tv_sec: {} - _first_push_power_off: {} = {}", ev.time.tv_sec, _first_push_power_off, diff);
-            if diff >= MIN_POWERKEY_DELAY && diff < *MAX_POWERKEY_DELAY { // two push in one second
-                power_off();
-            }
-        }
 	}
 }
 
@@ -333,7 +327,8 @@ fn main() -> io::Result<()> {
     let mut events = Events::with_capacity(1);
     let mut devs: Vec<Device> = Vec::new();
     let mut hotkey = false;
-    let mut first_push_power_off: time_t = 0;
+    let mut sec_first_push_power_off: time_t = 0;
+    let mut usec_first_push_power_off: suseconds_t = 0;
 
     println!("Device: {}", *DEVICE);
     println!("Is OGA v1.1: {}", *IS_OGA1);
@@ -371,10 +366,29 @@ fn main() -> io::Result<()> {
                             //let grab = if hotkey { GrabMode::Grab } else { GrabMode::Ungrab };
                             //dev.grab(grab)?;
                         }
-                        process_event(&dev, &ev, hotkey, first_push_power_off);
-                        if ev.event_code == POWER_OFF && *IS_DOUBLE_PUSH_POWER_OFF_ACTIVE {
-                            first_push_power_off = ev.time.tv_sec;
-                            //println!("new first_push_power_off: {}", first_push_power_off);
+
+                        process_event(&dev, &ev, hotkey);
+
+                        if ev.event_code == POWER_OFF && *IS_DOUBLE_PUSH_POWER_OFF_ACTIVE && ev.value == 1 {
+                            let mut sec_diff = ev.time.tv_sec - sec_first_push_power_off;
+                            //println!("ev.time.tv_sec: {} - sec_first_push_power_off: {} = {}", ev.time.tv_sec, sec_first_push_power_off, sec_diff);
+
+                            let mut usec_diff = ev.time.tv_usec - usec_first_push_power_off;
+                            //println!("ev.time.tv_usec: {} - usec_first_push_power_off: {} = {}", ev.time.tv_usec, usec_first_push_power_off, usec_diff);
+
+                            if usec_diff < 0 {
+                                usec_diff = 999999 + usec_diff;
+                            }
+                            if usec_diff < 990000 {
+                                sec_diff = sec_diff - 1;
+                            }
+                            //println!("usec_diff: {} - sec_dif: {})", usec_diff, sec_diff);
+
+                            sec_first_push_power_off = ev.time.tv_sec;
+                            usec_first_push_power_off = ev.time.tv_usec;
+                            if sec_diff >= MIN_POWERKEY_DELAY && sec_diff < *MAX_POWERKEY_DELAY { // two push in one second
+                                power_off();
+                            }
                         }
                     },
                     _ => ()
