@@ -27,6 +27,11 @@ static WIFI_OFF:    EventCode = EventCode::EV_KEY(EV_KEY::BTN_TR2);
 static POWER_OFF:   EventCode = EventCode::EV_KEY(EV_KEY::KEY_POWER);
 static MIN_POWERKEY_ELAPSED: time_t = 1;
 
+enum PowerkeyActions {
+    SHUTDOWN,
+    SUSPEND
+}
+
 lazy_static! {
     static ref DEVICE: &'static str = {
         if Path::new("/opt/.retrooz/device").exists() {
@@ -165,6 +170,21 @@ lazy_static! {
         }
 
         2
+    };
+
+    static ref POWERKEY_ACTION: PowerkeyActions = {
+        if !POWERKEY_PROPERTIES.is_empty() {
+            match POWERKEY_PROPERTIES.get("action") {
+                Some(x) => {
+                    if x == "suspend" {
+                        return PowerkeyActions::SUSPEND;
+                    }
+                },
+                None => return PowerkeyActions::SHUTDOWN,
+            };
+        }
+
+        PowerkeyActions::SHUTDOWN
     };
 
 }
@@ -337,8 +357,12 @@ fn main() -> io::Result<()> {
     let mut sec_first_push_power_off: time_t = 0;
     let mut usec_first_push_power_off: suseconds_t = 0;
 
-    println!("Device: {}\nIs OGA v1.1?: {}\nIs double push power off button active?: {}\nPOWERKEY interval time: {}",
-             *DEVICE, *IS_OGA1, *IS_DOUBLE_PUSH_POWER_OFF_ACTIVE, *MAX_POWERKEY_INTERVAL_TIME);
+    println!("Device: {}\nIs OGA v1.1?: {}\nIs double push power off button active?: {}\nPOWERKEY interval time: {}\nPOWERKEY action: {}",
+             *DEVICE, *IS_OGA1, *IS_DOUBLE_PUSH_POWER_OFF_ACTIVE, *MAX_POWERKEY_INTERVAL_TIME,
+             match *POWERKEY_ACTION {
+                PowerkeyActions::SUSPEND => "suspend",
+                _ => "shutdown",
+            });
 
     let mut i = 0;
     for s in ["/dev/input/event3", "/dev/input/event2", "/dev/input/event0", "/dev/input/event1"].iter() {
@@ -393,7 +417,10 @@ fn main() -> io::Result<()> {
                             sec_first_push_power_off = ev.time.tv_sec;
                             usec_first_push_power_off = ev.time.tv_usec;
                             if sec_diff >= MIN_POWERKEY_ELAPSED && sec_diff <= *MAX_POWERKEY_INTERVAL_TIME { // two push at least in more than one second
-                                power_off();
+                                match *POWERKEY_ACTION {
+                                    PowerkeyActions::SUSPEND => suspend(),
+                                    _ => power_off(),
+                                }
                             }
                         }
                     },
