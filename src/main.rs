@@ -26,6 +26,9 @@ static WIFI_ON:     EventCode = EventCode::EV_KEY(EV_KEY::BTN_TR);
 static WIFI_OFF:    EventCode = EventCode::EV_KEY(EV_KEY::BTN_TR2);
 static POWER_OFF:   EventCode = EventCode::EV_KEY(EV_KEY::KEY_POWER);
 static MIN_POWERKEY_ELAPSED: time_t = 1;
+static DEVICE_FILE: &'static str = "/opt/.retrooz/device";
+static POWERKEY_CFG_FILE: &'static str = "/usr/local/etc/powerkey.conf";
+static OGAGE_CFG_FILE: &'static str = "/usr/local/etc/ogage.conf";
 
 enum PowerkeyActions {
     SHUTDOWN,
@@ -34,8 +37,8 @@ enum PowerkeyActions {
 
 lazy_static! {
     static ref DEVICE: &'static str = {
-        if Path::new("/opt/.retrooz/device").exists() {
-            let lines = fs::read_to_string("/opt/.retrooz/device").expect("Can't read file '/opt/.retrooz/device'.").trim_end_matches(&['\r', '\n'][..]).to_string();
+        if Path::new(DEVICE_FILE).exists() {
+            let lines = fs::read_to_string(DEVICE_FILE).expect(&("Can't read file '".to_owned() + DEVICE_FILE + "'.")).trim_end_matches(&['\r', '\n'][..]).to_string();
             if !lines.is_empty() {
                 return Box::leak(lines.into_boxed_str());
             }
@@ -131,22 +134,24 @@ lazy_static! {
     };
 
     static ref POWERKEY_PROPERTIES: HashMap<String, String> = {
-        if Path::new("/usr/local/etc/powerkey.conf").exists() {
-            let lines = fs::read_to_string("/usr/local/etc/powerkey.conf").expect("Can't read file '/usr/local/etc/powerkey.conf'.");
-            let parsed = parse(lines.as_bytes()).expect("Can't parse properties of '/usr/local/etc/powerkey.conf'");
+        println!("POWERKEY_PROPERTIES:");
+        if Path::new(POWERKEY_CFG_FILE).exists() {
+            let lines = fs::read_to_string(POWERKEY_CFG_FILE).expect(&("Can't read file '".to_owned() + POWERKEY_CFG_FILE + "'."));
+            let parsed = parse(lines.as_bytes()).expect(&("Can't parse properties of '".to_owned() + POWERKEY_CFG_FILE + "'."));
         
-            return to_map(parsed);
+            let map_properties = to_map(parsed);
+
+            for (key, value) in map_properties.iter() {
+                println!("\t{} / {}", key, value);
+            }
+            println!("");
+            return map_properties;
         }
 
         HashMap::new()
     };
 
-    static ref IS_DOUBLE_PUSH_POWER_OFF_ACTIVE: bool = {       
-        println!("POWERKEY_PROPERTIES:");
-        for (key, value) in POWERKEY_PROPERTIES.iter() {
-            println!("{} / {}", key, value);
-        }
-
+    static ref IS_DOUBLE_PUSH_POWER_OFF_ACTIVE: bool = {
         if !POWERKEY_PROPERTIES.is_empty() {
             match POWERKEY_PROPERTIES.get("two_push_shutdown") {
                 Some(x) => {
@@ -185,6 +190,104 @@ lazy_static! {
         }
 
         PowerkeyActions::SHUTDOWN
+    };
+
+    static ref OGAGE_PROPERTIES: HashMap<String, String> = {
+        println!("OGAGE PROPERTIES:");
+        if Path::new(OGAGE_CFG_FILE).exists() {
+            let lines = fs::read_to_string(OGAGE_CFG_FILE).expect(&("Can't read file '".to_owned() + OGAGE_CFG_FILE + "'."));
+            let parsed = parse(lines.as_bytes()).expect(&("Can't parse properties of '".to_owned() + OGAGE_CFG_FILE + "'."));
+        
+            let map_properties = to_map(parsed);
+
+            for (key, value) in map_properties.iter() {
+                println!("\t{} / {}", key, value);
+            }
+            println!("");
+            return map_properties;
+        }
+
+        HashMap::new()
+    };
+
+    static ref ALLOW_BRIGHTNESS: bool = {
+        if !OGAGE_PROPERTIES.is_empty() {
+            match OGAGE_PROPERTIES.get("brightness") {
+                Some(x) => {
+                    if x == "enabled" {
+                        return true;
+                    }
+                    return false;
+                },
+                None => return false,
+            };
+        }
+
+        true
+    };
+
+    static ref ALLOW_VOLUME: bool = {
+        if !OGAGE_PROPERTIES.is_empty() {
+            match OGAGE_PROPERTIES.get("volume") {
+                Some(x) => {
+                    if x == "enabled" {
+                        return true;
+                    }
+                    return false;
+                },
+                None => return false,
+            };
+        }
+
+        true
+    };
+
+    static ref ALLOW_WIFI: bool = {
+        if !OGAGE_PROPERTIES.is_empty() {
+            match OGAGE_PROPERTIES.get("wifi") {
+                Some(x) => {
+                    if x == "enabled" {
+                        return true;
+                    }
+                    return false;
+                },
+                None => return false,
+            };
+        }
+;
+        true
+    };
+
+    static ref ALLOW_PERFORMANCE: bool = {
+        if !OGAGE_PROPERTIES.is_empty() {
+            match OGAGE_PROPERTIES.get("performance") {
+                Some(x) => {
+                    if x == "enabled" {
+                        return true;
+                    }
+                    return false;
+                },
+                None => return false,
+            };
+        }
+
+        true
+    };
+
+    static ref ALLOW_SUSPEND: bool = {
+        if !OGAGE_PROPERTIES.is_empty() {
+            match OGAGE_PROPERTIES.get("suspend") {
+                Some(x) => {
+                    if x == "enabled" {
+                        return true;
+                    }
+                    return false;
+                },
+                None => return false,
+            };
+        }
+
+        true
     };
 
 }
@@ -291,58 +394,58 @@ fn process_event(_dev: &Device, ev: &InputEvent, hotkey: bool) {
 */
         if hotkey {
             if !*IS_OGA1 {
-                if ev.event_code == *BRIGHT_UP {
+                if ev.event_code == *BRIGHT_UP && *ALLOW_BRIGHTNESS {
                     inc_brightness();
                 }
-                else if ev.event_code == *BRIGHT_DOWN {
+                else if ev.event_code == *BRIGHT_DOWN && *ALLOW_BRIGHTNESS {
                     dec_brightness();
                 }
-                else if ev.event_code == *VOL_UP {
+                else if ev.event_code == *VOL_UP && *ALLOW_VOLUME {
                     inc_volume();
                 }
-                else if ev.event_code == *VOL_DOWN {
+                else if ev.event_code == *VOL_DOWN && *ALLOW_VOLUME {
                     dec_volume();
                 }
             }
-            if ev.event_code == *MUTE {
+            if ev.event_code == *MUTE && *ALLOW_VOLUME {
                 mute_volume();
             }
-            else if ev.event_code == *VOL_NORM {
+            else if ev.event_code == *VOL_NORM && *ALLOW_VOLUME {
                 norm_volume();
             }
-            else if ev.event_code == PERF_MAX {
+            else if ev.event_code == PERF_MAX && *ALLOW_PERFORMANCE {
                 perf_max();
             }
-            else if ev.event_code == PERF_NORM {
+            else if ev.event_code == PERF_NORM && *ALLOW_PERFORMANCE {
                 perf_norm();
             }
-            else if ev.event_code == DARK_ON {
+            else if ev.event_code == DARK_ON && *ALLOW_BRIGHTNESS {
                 dark_on();
             }
-            else if ev.event_code == DARK_OFF {
+            else if ev.event_code == DARK_OFF && *ALLOW_BRIGHTNESS {
                 dark_off();
             }
-            else if ev.event_code == WIFI_ON {
+            else if ev.event_code == WIFI_ON && *ALLOW_WIFI {
                 wifi_on();
             }
-            else if ev.event_code == WIFI_OFF {
+            else if ev.event_code == WIFI_OFF && *ALLOW_WIFI {
                 wifi_off();
             }
-            else if ev.event_code == *SUSPEND {
+            else if ev.event_code == *SUSPEND && *ALLOW_SUSPEND {
                 suspend();
             }
         }
         else if *IS_OGA1 {
-            if ev.event_code == *BRIGHT_DOWN {
+            if ev.event_code == *BRIGHT_DOWN && *ALLOW_BRIGHTNESS {
                 dec_brightness();
             }
-            else if ev.event_code == *BRIGHT_UP {
+            else if ev.event_code == *BRIGHT_UP && *ALLOW_BRIGHTNESS {
                 inc_brightness();
             }
-            else if ev.event_code == *VOL_UP {
+            else if ev.event_code == *VOL_UP && *ALLOW_VOLUME {
                 inc_volume();
             }
-            else if ev.event_code == *VOL_DOWN {
+            else if ev.event_code == *VOL_DOWN && *ALLOW_VOLUME {
                 dec_volume();
             } 
 		}
@@ -363,6 +466,9 @@ fn main() -> io::Result<()> {
                 PowerkeyActions::SUSPEND => "suspend",
                 _ => "shutdown",
             });
+
+    println!("Allow brightness: {}\nAllow volume: {}\nAllow wifi: {}\nAllow performance: {}\nAllow suspend: {}", 
+        *ALLOW_BRIGHTNESS, *ALLOW_VOLUME, *ALLOW_WIFI, *ALLOW_PERFORMANCE, *ALLOW_SUSPEND);
 
     let mut i = 0;
     for s in ["/dev/input/event3", "/dev/input/event2", "/dev/input/event0", "/dev/input/event1"].iter() {
