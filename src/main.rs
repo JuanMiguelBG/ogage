@@ -214,12 +214,11 @@ lazy_static! {
         if !OGAGE_PROPERTIES.is_empty() {
             match OGAGE_PROPERTIES.get("brightness") {
                 Some(x) => {
-                    if x == "enabled" {
-                        return true;
+                    if x == "disabled" {
+                        return false;
                     }
-                    return false;
                 },
-                None => return false,
+                None => return true,
             };
         }
 
@@ -230,12 +229,11 @@ lazy_static! {
         if !OGAGE_PROPERTIES.is_empty() {
             match OGAGE_PROPERTIES.get("volume") {
                 Some(x) => {
-                    if x == "enabled" {
-                        return true;
+                    if x == "disabled" {
+                        return false;
                     }
-                    return false;
                 },
-                None => return false,
+                None => return true,
             };
         }
 
@@ -246,12 +244,11 @@ lazy_static! {
         if !OGAGE_PROPERTIES.is_empty() {
             match OGAGE_PROPERTIES.get("wifi") {
                 Some(x) => {
-                    if x == "enabled" {
-                        return true;
+                    if x == "disabled" {
+                        return false;
                     }
-                    return false;
                 },
-                None => return false,
+                None => return true,
             };
         }
 ;
@@ -262,12 +259,11 @@ lazy_static! {
         if !OGAGE_PROPERTIES.is_empty() {
             match OGAGE_PROPERTIES.get("performance") {
                 Some(x) => {
-                    if x == "enabled" {
-                        return true;
+                    if x == "disabled" {
+                        return false;
                     }
-                    return false;
                 },
-                None => return false,
+                None => return true,
             };
         }
 
@@ -278,12 +274,11 @@ lazy_static! {
         if !OGAGE_PROPERTIES.is_empty() {
             match OGAGE_PROPERTIES.get("suspend") {
                 Some(x) => {
-                    if x == "enabled" {
-                        return true;
+                    if x == "disabled" {
+                        return false;
                     }
-                    return false;
                 },
-                None => return false,
+                None => return true,
             };
         }
 
