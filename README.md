@@ -89,6 +89,12 @@ https://static.rust-lang.org/rustup/dist/aarch64-unknown-linux-gnu/rustup-init
 Select platform "aarch64-unknown-linux-gnu", version "stable" and "minimal".
 
 
+To compile from device:
+
+```
+sudo apt install brightnessctl rustc autotools-dev automake libtool libtool-bin libevdev-dev
+```
+
 Build
 =====
 ```
