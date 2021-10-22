@@ -212,7 +212,7 @@ lazy_static! {
 
     static ref AUTO_SUSPEND_ENABLED: bool = {
         if !AUTO_SUSPEND_PROPERTIES.is_empty() {
-            match AUTO_SUSPEND_PROPERTIES.get("auto_suspend") {
+            match AUTO_SUSPEND_PROPERTIES.get("auto_suspend_time") {
                 Some(x) => {
                     if x == "enabled" {
                         return true;
