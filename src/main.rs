@@ -14,9 +14,8 @@ use mio::{Poll,Events,Token,Interest};
 use mio::unix::SourceFd;
 use std::fs;
 use props_rs::*;
-use libc::time_t;
-use libc::suseconds_t;
 use std::collections::HashMap;
+use std::time::{Duration, SystemTime};
 
 static PERF_MAX:    EventCode = EventCode::EV_KEY(EV_KEY::BTN_TL2);
 static PERF_NORM:   EventCode = EventCode::EV_KEY(EV_KEY::BTN_TL);
@@ -25,10 +24,11 @@ static DARK_OFF:    EventCode = EventCode::EV_KEY(EV_KEY::BTN_DPAD_RIGHT);
 static WIFI_ON:     EventCode = EventCode::EV_KEY(EV_KEY::BTN_TR);
 static WIFI_OFF:    EventCode = EventCode::EV_KEY(EV_KEY::BTN_TR2);
 static POWER_OFF:   EventCode = EventCode::EV_KEY(EV_KEY::KEY_POWER);
-static MIN_POWERKEY_ELAPSED: time_t = 1;
+static MIN_POWERKEY_ELAPSED: Duration = Duration::from_secs(1);
 static DEVICE_FILE: &'static str = "/opt/.retrooz/device";
 static POWERKEY_CFG_FILE: &'static str = "/usr/local/etc/powerkey.conf";
 static OGAGE_CFG_FILE: &'static str = "/usr/local/etc/ogage.conf";
+static AUTO_SUSPEND_CFG_FILE: &'static str = "/usr/local/etc/auto_suspend.conf";
 
 enum PowerkeyActions {
     SHUTDOWN,
@@ -134,7 +134,7 @@ lazy_static! {
     };
 
     static ref POWERKEY_PROPERTIES: HashMap<String, String> = {
-        println!("POWERKEY_PROPERTIES:");
+        println!("\nPOWERKEY_PROPERTIES:");
         if Path::new(POWERKEY_CFG_FILE).exists() {
             let lines = fs::read_to_string(POWERKEY_CFG_FILE).expect(&("Can't read file '".to_owned() + POWERKEY_CFG_FILE + "'."));
             let parsed = parse(lines.as_bytes()).expect(&("Can't parse properties of '".to_owned() + POWERKEY_CFG_FILE + "'."));
@@ -144,7 +144,7 @@ lazy_static! {
             for (key, value) in map_properties.iter() {
                 println!("\t{} / {}", key, value);
             }
-            println!("");
+            println!("\n");
             return map_properties;
         }
 
@@ -159,22 +159,22 @@ lazy_static! {
                         return true;
                     }
                 },
-                None => return false,
+                _ => ()
             };
         }
 
         false
     };
 
-    static ref MAX_POWERKEY_INTERVAL_TIME: time_t = {
+    static ref MAX_POWERKEY_INTERVAL_TIME: Duration = {
         if !POWERKEY_PROPERTIES.is_empty() {
             match POWERKEY_PROPERTIES.get("max_interval_time") {
-                Some(x) => return x.parse::<i64>().unwrap() + MIN_POWERKEY_ELAPSED,
-                None => return 2,
+                Some(x) => return Duration::from_secs(x.parse::<u64>().unwrap() + MIN_POWERKEY_ELAPSED.as_secs()),
+                None => return Duration::from_secs(2),
             };
         }
 
-        2
+        Duration::from_secs(2)
     };
 
     static ref POWERKEY_ACTION: PowerkeyActions = {
@@ -185,15 +185,60 @@ lazy_static! {
                         return PowerkeyActions::SUSPEND;
                     }
                 },
-                None => return PowerkeyActions::SHUTDOWN,
+                _ => ()
             };
         }
 
         PowerkeyActions::SHUTDOWN
     };
 
+    static ref AUTO_SUSPEND_PROPERTIES: HashMap<String, String> = {
+        println!("\nAUTO_SUSPEND_PROPERTIES:");
+        if Path::new(AUTO_SUSPEND_CFG_FILE).exists() {
+            let lines = fs::read_to_string(AUTO_SUSPEND_CFG_FILE).expect(&("Can't read file '".to_owned() + AUTO_SUSPEND_CFG_FILE + "'."));
+            let parsed = parse(lines.as_bytes()).expect(&("Can't parse properties of '".to_owned() + AUTO_SUSPEND_CFG_FILE + "'."));
+        
+            let map_properties = to_map(parsed);
+
+            for (key, value) in map_properties.iter() {
+                println!("\t{} / {}", key, value);
+            }
+            println!("\n");
+            return map_properties;
+        }
+
+        HashMap::new()
+    };
+
+    static ref AUTO_SUSPEND_ENABLED: bool = {
+        if !AUTO_SUSPEND_PROPERTIES.is_empty() {
+            match AUTO_SUSPEND_PROPERTIES.get("auto_suspend") {
+                Some(x) => {
+                    if x == "enabled" {
+                        return true;
+                    }
+                },
+                _ => ()
+            };
+        }
+
+        false
+    };
+
+    // timeout in minutes
+    static ref AUTO_SUSPEND_TIMEOUT: Duration = {
+        if !AUTO_SUSPEND_PROPERTIES.is_empty() {
+            match AUTO_SUSPEND_PROPERTIES.get("auto_suspend_timeout") {
+                Some(x) => return Duration::from_secs(x.parse::<u64>().unwrap() * 60),
+                _ => ()
+            };
+        }
+
+        Duration::from_secs(300)
+    };
+
     static ref OGAGE_PROPERTIES: HashMap<String, String> = {
-        println!("OGAGE PROPERTIES:");
+        println!("\nOGAGE PROPERTIES:");
         if Path::new(OGAGE_CFG_FILE).exists() {
             let lines = fs::read_to_string(OGAGE_CFG_FILE).expect(&("Can't read file '".to_owned() + OGAGE_CFG_FILE + "'."));
             let parsed = parse(lines.as_bytes()).expect(&("Can't parse properties of '".to_owned() + OGAGE_CFG_FILE + "'."));
@@ -203,7 +248,7 @@ lazy_static! {
             for (key, value) in map_properties.iter() {
                 println!("\t{} / {}", key, value);
             }
-            println!("");
+            println!("\n");
             return map_properties;
         }
 
@@ -218,7 +263,7 @@ lazy_static! {
                         return false;
                     }
                 },
-                None => return true,
+                _ => ()
             };
         }
 
@@ -233,7 +278,7 @@ lazy_static! {
                         return false;
                     }
                 },
-                None => return true,
+                _ => ()
             };
         }
 
@@ -248,10 +293,10 @@ lazy_static! {
                         return false;
                     }
                 },
-                None => return true,
+                _ => ()
             };
         }
-;
+
         true
     };
 
@@ -263,7 +308,7 @@ lazy_static! {
                         return false;
                     }
                 },
-                None => return true,
+                _ => ()
             };
         }
 
@@ -278,13 +323,12 @@ lazy_static! {
                         return false;
                     }
                 },
-                None => return true,
+                _ => ()
             };
         }
 
         true
     };
-
 }
 
 fn blinkon() {
@@ -367,40 +411,45 @@ fn power_off() {
     Command::new("sudo").args(&["shutdown", "-h", "now"]).output().expect("Failed to execute power off");
 }
 
+fn process_oga1_event(ev: &InputEvent) {
+    if ev.event_code == *BRIGHT_UP && *ALLOW_BRIGHTNESS {
+        inc_brightness();
+    }
+    else if ev.event_code == *BRIGHT_DOWN && *ALLOW_BRIGHTNESS {
+        dec_brightness();
+    }
+    else if ev.event_code == *VOL_UP && *ALLOW_VOLUME {
+        inc_volume();
+    }
+    else if ev.event_code == *VOL_DOWN && *ALLOW_VOLUME {
+        dec_volume();
+    }
+}
+
 fn process_event(_dev: &Device, ev: &InputEvent, hotkey: bool) {
-/*
-        println!("Event: time {}.{} type {} code {} value {} hotkey {}",
+    /*
+    println!("Event: time {}.{} type {} code {} value {} hotkey {}",
              ev.time.tv_sec,
              ev.time.tv_usec,
              ev.event_type,
              ev.event_code,
              ev.value,
              hotkey);
-*/
+    */
 
     if ev.value == 1 {
-/*
+        /*
         println!("Event: time {}.{} type {} code {} value {} hotkey {}",
-            ev.time.tv_sec, ev.time.tv_usec, ev.event_type, ev.event_code,
-            ev.value, hotkey);
+                ev.time.tv_sec, ev.time.tv_usec, ev.event_type, ev.event_code,
+                ev.value, hotkey);
         println!("Device: {}", *DEVICE);
         println!("Is OGA v1.1: {}", *IS_OGA1);
         println!("IS double push power off button active?: {}", *IS_DOUBLE_PUSH_POWER_OFF_ACTIVE);
-*/
+        */
+
         if hotkey {
             if !*IS_OGA1 {
-                if ev.event_code == *BRIGHT_UP && *ALLOW_BRIGHTNESS {
-                    inc_brightness();
-                }
-                else if ev.event_code == *BRIGHT_DOWN && *ALLOW_BRIGHTNESS {
-                    dec_brightness();
-                }
-                else if ev.event_code == *VOL_UP && *ALLOW_VOLUME {
-                    inc_volume();
-                }
-                else if ev.event_code == *VOL_DOWN && *ALLOW_VOLUME {
-                    dec_volume();
-                }
+                process_oga1_event(ev);
             }
             if ev.event_code == *MUTE && *ALLOW_VOLUME {
                 mute_volume();
@@ -431,18 +480,7 @@ fn process_event(_dev: &Device, ev: &InputEvent, hotkey: bool) {
             }
         }
         else if *IS_OGA1 {
-            if ev.event_code == *BRIGHT_DOWN && *ALLOW_BRIGHTNESS {
-                dec_brightness();
-            }
-            else if ev.event_code == *BRIGHT_UP && *ALLOW_BRIGHTNESS {
-                inc_brightness();
-            }
-            else if ev.event_code == *VOL_UP && *ALLOW_VOLUME {
-                inc_volume();
-            }
-            else if ev.event_code == *VOL_DOWN && *ALLOW_VOLUME {
-                dec_volume();
-            } 
+            process_oga1_event(ev);
 		}
 	}
 }
@@ -452,15 +490,15 @@ fn main() -> io::Result<()> {
     let mut events = Events::with_capacity(1);
     let mut devs: Vec<Device> = Vec::new();
     let mut hotkey = false;
-    let mut sec_first_push_power_off: time_t = 0;
-    let mut usec_first_push_power_off: suseconds_t = 0;
+    let mut first_push_power_off = Duration::from_secs(0);
+    let mut last_button_push = SystemTime::now();
 
-    println!("Device: {}\nIs OGA v1.1?: {}\nIs double push power off button active?: {}\nPOWERKEY interval time: {}\nPOWERKEY action: {}",
+    println!("\nDevice: {}\nIs OGA v1.1?: {}\nIs double push power off button active?: {}\nPOWERKEY interval time: {:?}\nPOWERKEY action: {}\nAuto suspend: {}\nAuto suspend timeout: {:?}",
              *DEVICE, *IS_OGA1, *IS_DOUBLE_PUSH_POWER_OFF_ACTIVE, *MAX_POWERKEY_INTERVAL_TIME,
              match *POWERKEY_ACTION {
                 PowerkeyActions::SUSPEND => "suspend",
                 _ => "shutdown",
-            });
+            }, *AUTO_SUSPEND_ENABLED, *AUTO_SUSPEND_TIMEOUT);
 
     println!("Allow brightness: {}\nAllow volume: {}\nAllow wifi: {}\nAllow performance: {}\nAllow suspend: {}", 
         *ALLOW_BRIGHTNESS, *ALLOW_VOLUME, *ALLOW_WIFI, *ALLOW_PERFORMANCE, *ALLOW_SUSPEND);
@@ -501,27 +539,30 @@ fn main() -> io::Result<()> {
                         process_event(&dev, &ev, hotkey);
 
                         if ev.event_code == POWER_OFF && *IS_DOUBLE_PUSH_POWER_OFF_ACTIVE && ev.value == 1 {
-                            let mut sec_diff = ev.time.tv_sec - sec_first_push_power_off;
-                            //println!("ev.time.tv_sec: {} - sec_first_push_power_off: {} = {}", ev.time.tv_sec, sec_first_push_power_off, sec_diff);
-
-                            let mut usec_diff = ev.time.tv_usec - usec_first_push_power_off;
-                            //println!("ev.time.tv_usec: {} - usec_first_push_power_off: {} = {}", ev.time.tv_usec, usec_first_push_power_off, usec_diff);
-
-                            if usec_diff < 0 {
-                                usec_diff = 999999 + usec_diff;
-                            }
-                            if usec_diff < 990000 {
-                                sec_diff = sec_diff - 1;
-                            }
+                            let next_first_push_power_off = Duration::new(ev.time.tv_sec as u64, ev.time.tv_usec as u32);
+                            let diff = next_first_push_power_off.checked_sub(first_push_power_off);
                             //println!("usec_diff: {} - sec_dif: {})", usec_diff, sec_diff);
-
-                            sec_first_push_power_off = ev.time.tv_sec;
-                            usec_first_push_power_off = ev.time.tv_usec;
-                            if sec_diff >= MIN_POWERKEY_ELAPSED && sec_diff <= *MAX_POWERKEY_INTERVAL_TIME { // two push at least in more than one second
+                            first_push_power_off = Duration::new(ev.time.tv_sec as u64, ev.time.tv_usec as u32);
+                            if diff.unwrap() >= MIN_POWERKEY_ELAPSED && diff.unwrap() <= *MAX_POWERKEY_INTERVAL_TIME { // two push at least in more than one second
                                 match *POWERKEY_ACTION {
                                     PowerkeyActions::SUSPEND => suspend(),
                                     _ => power_off(),
                                 }
+                            }
+                        }
+
+                        if *AUTO_SUSPEND_ENABLED {
+                            if ev.value == 1 {
+                                last_button_push = SystemTime::now();
+                            }
+                            /*
+                            println!("Event: time {}.{} type {} code {} value {} hotkey {}\nLast Push Button Time {:?}\nActual Time {:?}\n",
+                                     ev.time.tv_sec, ev.time.tv_usec, ev.event_type, ev.event_code,
+                                     ev.value, hotkey, last_button_push, SystemTime::now());
+                            */
+                            if last_button_push.elapsed().unwrap() > *AUTO_SUSPEND_TIMEOUT {
+                                suspend();
+                                last_button_push = SystemTime::now();
                             }
                         }
                     },
