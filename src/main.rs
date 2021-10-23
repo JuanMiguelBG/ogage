@@ -490,8 +490,8 @@ fn main() -> io::Result<()> {
     let mut events = Events::with_capacity(1);
     let mut devs: Vec<Device> = Vec::new();
     let mut hotkey = false;
-    let mut first_push_power_off = Duration::from_secs(0);
-    let mut last_button_push = SystemTime::now();
+    let mut first_push_power_off: Option<SystemTime> = None;
+    let mut last_button_push: SystemTime = SystemTime::now();
 
     println!("\nDevice: {}\nIs OGA v1.1?: {}\nIs double push power off button active?: {}\nPOWERKEY interval time: {:?}\nPOWERKEY action: {}\nAuto suspend: {}\nAuto suspend timeout: {:?}",
              *DEVICE, *IS_OGA1, *IS_DOUBLE_PUSH_POWER_OFF_ACTIVE, *MAX_POWERKEY_INTERVAL_TIME,
@@ -539,15 +539,20 @@ fn main() -> io::Result<()> {
                         process_event(&dev, &ev, hotkey);
 
                         if ev.event_code == POWER_OFF && *IS_DOUBLE_PUSH_POWER_OFF_ACTIVE && ev.value == 1 {
-                            let next_first_push_power_off = Duration::new(ev.time.tv_sec as u64, ev.time.tv_usec as u32);
-                            let diff = next_first_push_power_off.checked_sub(first_push_power_off);
-                            //println!("usec_diff: {} - sec_dif: {})", usec_diff, sec_diff);
-                            first_push_power_off = Duration::new(ev.time.tv_sec as u64, ev.time.tv_usec as u32);
-                            if diff.unwrap() >= MIN_POWERKEY_ELAPSED && diff.unwrap() <= *MAX_POWERKEY_INTERVAL_TIME { // two push at least in more than one second
-                                match *POWERKEY_ACTION {
-                                    PowerkeyActions::SUSPEND => suspend(),
-                                    _ => power_off(),
+                            let next_first_push_power_off: SystemTime = SystemTime::now();
+                            if first_push_power_off.is_some() {
+                                let diff = first_push_power_off.unwrap().elapsed().unwrap();
+                                first_push_power_off = Some(next_first_push_power_off);
+                                //println!("diff: {:?})", diff);
+                                if diff >= MIN_POWERKEY_ELAPSED && diff <= *MAX_POWERKEY_INTERVAL_TIME { // two push at least in more than one second
+                                    match *POWERKEY_ACTION {
+                                        PowerkeyActions::SUSPEND => suspend(),
+                                        _ => power_off(),
+                                    }
                                 }
+                            }
+                            else {
+                                first_push_power_off = Some(next_first_push_power_off);
                             }
                         }
 
