@@ -36,7 +36,7 @@
 
 -----
 
-## RGB10 Max - Top
+## RGB10 Max/Max2 - Top
 ![](https://github.com/southoz/RetroOZ/blob/main/wiki/images/Buttons_RGB10_Max.png)
 ### Hotkey - 15
 * 0 (B Button) - Volume Up
@@ -55,7 +55,7 @@
 
 -----
 
-## RGB10 Max - Native
+## RGB10 Max/Max2 - Native
 ![](https://github.com/southoz/RetroOZ/blob/main/wiki/images/Buttons_RGB10_Max.png)
 ### Hotkey - 13
 * 0 (B Button) - Volume Up
