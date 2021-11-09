@@ -51,19 +51,19 @@ lazy_static! {
         if *DEVICE == "oga1" {
             return true;
         }
-
+        // OGS, OGA, RGB10 MAX/MAX2
         false
     };
 
     static ref HOTKEY: EventCode = {
-        if *DEVICE == "rgb10maxtop" {
+        if *DEVICE == "rgb10maxtop" || *DEVICE == "rgb10max2top" {
             return EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY4);
         }
-        else if *DEVICE == "rgb10maxnative" {
+        else if *DEVICE == "rgb10maxnative" || *DEVICE == "rgb10max2native" {
             return EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY2);
         }
 
-        //if (DEVICE == "ogs") or (DEVICE == "oga") or (DEVICE == "oga1")
+        // OGS, OGA and OGA 1.1
         EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY6)
     };
 
@@ -72,7 +72,7 @@ lazy_static! {
             return EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY5);
         }
 
-        //if (DEVICE == "ogs") or (DEVICE == "oga") or (DEVICE == "rgb10maxtop") or (DEVICE == "rgb10maxnative")
+        // OGS, OGA, RGB10 MAX/MAX2
         EventCode::EV_KEY(EV_KEY::BTN_DPAD_UP)
     };
 
@@ -81,7 +81,7 @@ lazy_static! {
             return EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY4);
         }
 
-        //if (DEVICE == "ogs") or (DEVICE == "oga") or (DEVICE == "rgb10maxtop") or (DEVICE == "rgb10maxnative")
+        // OGS, OGA, RGB10 MAX/MAX2
         EventCode::EV_KEY(EV_KEY::BTN_DPAD_DOWN)
     };
 
@@ -90,7 +90,7 @@ lazy_static! {
             return EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY3);
         }
 
-        //if (DEVICE == "ogs") or (DEVICE == "oga") or (DEVICE == "rgb10maxtop") or (DEVICE == "rgb10maxnative")
+        // OGS, OGA, RGB10 MAX/MAX2
         EventCode::EV_KEY(EV_KEY::BTN_NORTH)
     };
 
@@ -99,7 +99,7 @@ lazy_static! {
             return EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY2);
         }
 
-        //if (DEVICE == "ogs") or (DEVICE == "oga") or (DEVICE == "rgb10maxtop") or (DEVICE == "rgb10maxnative")
+        // OGS, OGA, RGB10 MAX/MAX2
         EventCode::EV_KEY(EV_KEY::BTN_SOUTH)
     };
 
@@ -108,7 +108,7 @@ lazy_static! {
             return EventCode::EV_KEY(EV_KEY::BTN_DPAD_DOWN);
         }
 
-        //if (DEVICE == "ogs") or (DEVICE == "oga") or (DEVICE == "rgb10maxtop") or (DEVICE == "rgb10maxnative")
+        // OGS, OGA, RGB10 MAX/MAX2
         EventCode::EV_KEY(EV_KEY::BTN_WEST)
     };
 
@@ -117,7 +117,7 @@ lazy_static! {
             return EventCode::EV_KEY(EV_KEY::BTN_DPAD_UP);
         }
 
-        //if (DEVICE == "ogs") or (DEVICE == "oga") or (DEVICE == "rgb10maxtop") or (DEVICE == "rgb10maxnative")
+        // OGS, OGA, RGB10 MAX/MAX2
         EventCode::EV_KEY(EV_KEY::BTN_EAST)
     };
 
@@ -125,11 +125,11 @@ lazy_static! {
         if *IS_OGA1 {
             return EventCode::EV_KEY(EV_KEY::BTN_NORTH);
         }
-        else if *DEVICE == "rgb10maxnative" {
+        else if *DEVICE == "rgb10maxnative" || *DEVICE == "rgb10max2native" {
             return EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY4);
         }
 
-        //if (DEVICE == "ogs") or (DEVICE == "oga") or (DEVICE == "rgb10maxtop")
+        // OGS, OGA, RGB10 MAX/MAX2 Top
         EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY2)
     };
 
