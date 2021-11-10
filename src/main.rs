@@ -56,11 +56,14 @@ lazy_static! {
     };
 
     static ref HOTKEY: EventCode = {
-        if *DEVICE == "rgb10maxtop" || *DEVICE == "rgb10max2top" {
-            return EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY4);
-        }
-        else if *DEVICE == "rgb10maxnative" || *DEVICE == "rgb10max2native" {
-            return EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY2);
+        let device_str = DEVICE.to_string();
+        if device_str.starts_with("rgb10max") {
+            if device_str.ends_with("top") {
+                return EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY4);
+            }
+            else { // native
+                return EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY2);
+            }
         }
 
         // OGS, OGA and OGA 1.1
@@ -122,10 +125,11 @@ lazy_static! {
     };
 
     static ref SUSPEND: EventCode = {
+        let device_str = DEVICE.to_string();
         if *IS_OGA1 {
             return EventCode::EV_KEY(EV_KEY::BTN_NORTH);
         }
-        else if *DEVICE == "rgb10maxnative" || *DEVICE == "rgb10max2native" {
+        else if device_str.starts_with("rgb10max") && device_str.ends_with("native") {
             return EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY4);
         }
 
