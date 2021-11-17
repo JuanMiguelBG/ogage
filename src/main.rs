@@ -262,6 +262,44 @@ lazy_static! {
         false
     };
 
+    static ref AUTO_DIM_ENABLED: bool = {
+        if !AUTO_SUSPEND_PROPERTIES.is_empty() {
+            match AUTO_SUSPEND_PROPERTIES.get("auto_dim_time") {
+                Some(x) => {
+                    if x == "enabled" {
+                        return true;
+                    }
+                },
+                _ => ()
+            };
+        }
+
+        false
+    };
+
+    // timeout in seconds
+    static ref AUTO_DIM_TIMEOUT: Duration = {
+        if !AUTO_SUSPEND_PROPERTIES.is_empty() {
+            match AUTO_SUSPEND_PROPERTIES.get("auto_dim_timeout") {
+                Some(x) => return Duration::from_secs(x.parse::<u64>().unwrap()),
+                _ => ()
+            };
+        }
+
+        Duration::from_secs(300)
+    };
+
+    static ref AUTO_DIM_BRIGHTNESS: u64 = {
+        if !AUTO_SUSPEND_PROPERTIES.is_empty() {
+            match AUTO_SUSPEND_PROPERTIES.get("auto_dim_brightness") {
+                Some(x) => return x.parse::<u64>().unwrap(),
+                _ => ()
+            };
+        }
+
+        50
+    };
+
     static ref OGAGE_PROPERTIES: HashMap<String, String> = {
         println!("\nOGAGE PROPERTIES:");
         if Path::new(OGAGE_CFG_FILE).exists() {
