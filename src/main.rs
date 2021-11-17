@@ -16,6 +16,7 @@ use std::fs;
 use props_rs::*;
 use std::collections::HashMap;
 use std::time::{Duration, SystemTime};
+use std::thread;
 
 static PERF_MAX:    EventCode = EventCode::EV_KEY(EV_KEY::BTN_TL2);
 static PERF_NORM:   EventCode = EventCode::EV_KEY(EV_KEY::BTN_TL);
@@ -297,7 +298,7 @@ lazy_static! {
             };
         }
 
-        50
+        25
     };
 
     static ref OGAGE_PROPERTIES: HashMap<String, String> = {
@@ -394,24 +395,33 @@ lazy_static! {
     };
 }
 
-fn blinkon() {
+fn get_brightness() -> u32 {
     let output = Command::new("brightnessctl").arg("g").stdout(Stdio::piped()).output().expect("Failed to execute brightnessctl");
-    let current = String::from_utf8(output.stdout).unwrap();
-    Command::new("brightnessctl").args(&["s","0"]).output().expect("Failed to execute brightnessctl");
-    Command::new("sleep").arg("0.2").output().expect("Failed to Sleep");
-    Command::new("brightnessctl").args(&["s","160"]).output().expect("Failed to execute brightnessctl");
-    Command::new("sleep").arg("0.2").output().expect("Failed to Sleep");
-    Command::new("brightnessctl").args(&["s","0"]).output().expect("Failed to execute brightnessctl");
-    Command::new("sleep").arg("0.2").output().expect("Failed to Sleep");
-    Command::new("brightnessctl").arg("s").arg(current).output().expect("Failed to execute brightnessctl");
+    let brightness_str = String::from_utf8(output.stdout).expect("Failed to convert stdout to string");
+    brightness_str.trim().parse().expect("Failed to parse brightness string")
+}
+
+fn set_brightness(brightness: u32) {
+    let brightness_str = brightness.to_string();
+    Command::new("brightnessctl").args(&["s", &brightness_str]).output().expect("Failed to execute brightnessctl");
+}
+
+fn blinkon() {
+    let current = get_brightness();
+    set_brightness(0);
+    thread::sleep(Duration::from_millis(200));
+    set_brightness(160);
+    thread::sleep(Duration::from_millis(200));
+    set_brightness(0);
+    thread::sleep(Duration::from_millis(200));
+    set_brightness(current);
 }
 
 fn blinkoff() {
-    let output = Command::new("brightnessctl").arg("g").stdout(Stdio::piped()).output().expect("Failed to execute brightnessctl");
-    let current = String::from_utf8(output.stdout).unwrap();
-    Command::new("brightnessctl").args(&["s","0"]).output().expect("Failed to execute brightnessctl");
-    Command::new("sleep").arg("0.3").output().expect("Failed to Sleep");
-    Command::new("brightnessctl").arg("s").arg(current).output().expect("Failed to execute brightnessctl");
+    let current = get_brightness();
+    set_brightness(0);
+    thread::sleep(Duration::from_millis(300));
+    set_brightness(current);
 }
 
 fn inc_brightness() {
@@ -449,11 +459,11 @@ fn perf_norm() {
 }
 
 fn dark_on() {
-    Command::new("brightnessctl").args(&["s","10%"]).output().expect("Failed to execute brightnessctl");
+    set_brightness(25);
 }
 
 fn dark_off() {
-    Command::new("brightnessctl").args(&["s","50%"]).output().expect("Failed to execute brightnessctl");
+    set_brightness(125);
 }
 
 fn wifi_on() {
