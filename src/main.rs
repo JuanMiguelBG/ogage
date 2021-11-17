@@ -266,6 +266,21 @@ lazy_static! {
         false
     };
 
+    static ref AUTO_DIM_STAY_AWAKE_WHILE_CHARGING: bool = {
+        if !AUTO_SUSPEND_PROPERTIES.is_empty() {
+            match AUTO_SUSPEND_PROPERTIES.get("auto_dim_stay_awake_while_charging") {
+                Some(x) => {
+                    if x == "enabled" {
+                        return true;
+                    }
+                },
+                _ => ()
+            };
+        }
+
+        false
+    };
+
     static ref AUTO_DIM_ENABLED: bool = {
         if !AUTO_SUSPEND_PROPERTIES.is_empty() {
             match AUTO_SUSPEND_PROPERTIES.get("auto_dim_time") {
@@ -679,19 +694,23 @@ fn main() -> io::Result<()> {
                             if (*AUTO_SUSPEND_STAY_AWAKE_WHILE_CHARGING && button_push_timed_out && charge_timed_out) || (!*AUTO_SUSPEND_STAY_AWAKE_WHILE_CHARGING && button_push_timed_out) {
                                 suspend();
                                 last_button_push = SystemTime::now();
+                                last_charge = SystemTime::now();
                             }
                         }
 
                         if *AUTO_DIM_ENABLED {
                             if auto_dim_active {
-                                if button_pushed {
+                                if button_pushed || (*AUTO_DIM_STAY_AWAKE_WHILE_CHARGING && charging) {
                                     // Restore previous brightness
                                     auto_dim_active = false;
                                     set_brightness(last_brightness);
                                 }
                             }
                             else {
-                                if last_button_push.elapsed().unwrap() > *AUTO_DIM_TIMEOUT {
+                                let button_push_timed_out = last_button_push.elapsed().unwrap() > *AUTO_DIM_TIMEOUT;
+                                let charge_timed_out = last_charge.elapsed().unwrap() > *AUTO_DIM_TIMEOUT;
+
+                                if (*AUTO_DIM_STAY_AWAKE_WHILE_CHARGING && button_push_timed_out && charge_timed_out) || (!*AUTO_DIM_STAY_AWAKE_WHILE_CHARGING && button_push_timed_out) {
                                     // Save current brightness and dim the screen
                                     auto_dim_active = true;
                                     last_brightness = get_brightness();
