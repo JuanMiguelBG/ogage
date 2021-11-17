@@ -293,10 +293,10 @@ lazy_static! {
         Duration::from_secs(300)
     };
 
-    static ref AUTO_DIM_BRIGHTNESS: u64 = {
+    static ref AUTO_DIM_BRIGHTNESS: u32 = {
         if !AUTO_SUSPEND_PROPERTIES.is_empty() {
             match AUTO_SUSPEND_PROPERTIES.get("auto_dim_brightness") {
-                Some(x) => return x.parse::<u64>().unwrap(),
+                Some(x) => return x.parse::<u32>().unwrap(),
                 _ => ()
             };
         }
@@ -582,6 +582,8 @@ fn main() -> io::Result<()> {
     let mut first_push_power_off: Option<SystemTime> = None;
     let mut last_button_push: SystemTime = SystemTime::now();
     let mut last_charge: SystemTime = SystemTime::now();
+    let mut auto_dim_active: bool = false;
+    let mut last_brightness: u32 = 0;
 
     println!("\nDevice: {}\nIs OGA v1.1?: {}\nIs double push power off button active?: {}\nPOWERKEY interval time: {:?}\nPOWERKEY action: {}\nAuto suspend: {}\nAuto suspend timeout: {:?}",
              *DEVICE, *IS_OGA1, *IS_DOUBLE_PUSH_POWER_OFF_ACTIVE, *MAX_POWERKEY_INTERVAL_TIME,
@@ -659,6 +661,12 @@ fn main() -> io::Result<()> {
 
                             if button_pushed {
                                 last_button_push = SystemTime::now();
+
+                                if auto_dim_active {
+                                    // Restore previous brightness
+                                    auto_dim_active = false;
+                                    set_brightness(last_brightness);
+                                }
                             }
                             
                             if charging {
@@ -672,9 +680,14 @@ fn main() -> io::Result<()> {
                             let button_push_timed_out = last_button_push.elapsed().unwrap() > *AUTO_SUSPEND_TIMEOUT;
                             let charge_timed_out = last_charge.elapsed().unwrap() > *AUTO_SUSPEND_TIMEOUT;
 
-                            if (*AUTO_SUSPEND_STAY_AWAKE_WHILE_CHARGING && button_push_timed_out && charge_timed_out) || (!*AUTO_SUSPEND_STAY_AWAKE_WHILE_CHARGING && button_push_timed_out){
+                            if (*AUTO_SUSPEND_STAY_AWAKE_WHILE_CHARGING && button_push_timed_out && charge_timed_out) || (!*AUTO_SUSPEND_STAY_AWAKE_WHILE_CHARGING && button_push_timed_out) {
                                 suspend();
                                 last_button_push = SystemTime::now();
+                            } else if *AUTO_DIM_ENABLED && last_button_push.elapsed().unwrap() > *AUTO_DIM_TIMEOUT {
+                                // Save current brightness and dim the screen
+                                auto_dim_active = true;
+                                last_brightness = get_brightness();
+                                set_brightness(*AUTO_DIM_BRIGHTNESS);
                             }
                         }
                     },
