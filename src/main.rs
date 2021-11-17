@@ -29,10 +29,16 @@ static DEVICE_FILE: &'static str = "/opt/.retrooz/device";
 static POWERKEY_CFG_FILE: &'static str = "/usr/local/etc/powerkey.conf";
 static OGAGE_CFG_FILE: &'static str = "/usr/local/etc/ogage.conf";
 static AUTO_SUSPEND_CFG_FILE: &'static str = "/usr/local/etc/auto_suspend.conf";
+static BATTERY_STATUS_FILE: &'static str = "/sys/class/power_supply/battery/status";
 
 enum PowerkeyActions {
     SHUTDOWN,
     SUSPEND
+}
+
+enum BatteryStatus {
+    DISCHARGING,
+    CHARGING
 }
 
 lazy_static! {
@@ -415,6 +421,18 @@ fn power_off() {
     Command::new("sudo").args(&["shutdown", "-h", "now"]).output().expect("Failed to execute power off");
 }
 
+fn battery_status() -> BatteryStatus {
+    let status_str = fs::read_to_string(BATTERY_STATUS_FILE).expect("Failed to read battery status");
+
+    let status: BatteryStatus = match status_str.as_str().trim() {
+        "Charging" => BatteryStatus::CHARGING,
+        "Discharging" => BatteryStatus::DISCHARGING,
+        _ => panic!("Unhandled battery status value"),
+    };
+
+    status
+}
+
 fn process_oga1_event(ev: &InputEvent) {
     if ev.event_code == *BRIGHT_UP && *ALLOW_BRIGHTNESS {
         inc_brightness();
@@ -561,7 +579,12 @@ fn main() -> io::Result<()> {
                         }
 
                         if *AUTO_SUSPEND_ENABLED {
-                            if ev.value == 1 {
+                            let charging: bool = match battery_status() {
+                                BatteryStatus::CHARGING => true,
+                                BatteryStatus::DISCHARGING => false,
+                            };
+
+                            if ev.value == 1 || charging {
                                 last_button_push = SystemTime::now();
                             }
                             /*
