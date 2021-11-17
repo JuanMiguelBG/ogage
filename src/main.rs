@@ -636,12 +636,12 @@ fn main() -> io::Result<()> {
     let mut auto_dim_active: bool = false;
     let mut last_brightness: u32 = 0;
 
-    println!("\nDevice: {}\nIs OGA v1.1?: {}\nIs double push power off button active?: {}\nPOWERKEY interval time: {:?}\nPOWERKEY action: {}\nAuto suspend: {}\nAuto suspend timeout: {:?}",
+    println!("\nDevice: {}\nIs OGA v1.1?: {}\nIs double push power off button active?: {}\nPOWERKEY interval time: {:?}\nPOWERKEY action: {}\nAuto suspend: {}\nAuto suspend timeout: {:?}\nAuto suspend stay awake while charging: {}\nAuto dim: {}\nAuto dim timeout: {:?}\nAuto dim brightness: {}\nAuto dim stay awake while charging: {}",
              *DEVICE, *IS_OGA1, *IS_DOUBLE_PUSH_POWER_OFF_ACTIVE, *MAX_POWERKEY_INTERVAL_TIME,
              match *POWERKEY_ACTION {
                 PowerkeyActions::Suspend => "suspend",
                 _ => "shutdown",
-            }, *AUTO_SUSPEND_ENABLED, *AUTO_SUSPEND_TIMEOUT);
+            }, *AUTO_SUSPEND_ENABLED, *AUTO_SUSPEND_TIMEOUT, *AUTO_SUSPEND_STAY_AWAKE_WHILE_CHARGING, *AUTO_DIM_ENABLED, *AUTO_DIM_TIMEOUT, *AUTO_DIM_BRIGHTNESS, *AUTO_DIM_STAY_AWAKE_WHILE_CHARGING);
 
     println!("Allow brightness: {}\nAllow volume: {}\nAllow wifi: {}\nAllow performance: {}\nAllow suspend: {}", 
         *ALLOW_BRIGHTNESS, *ALLOW_VOLUME, *ALLOW_WIFI, *ALLOW_PERFORMANCE, *ALLOW_SUSPEND);
