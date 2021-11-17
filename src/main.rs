@@ -33,8 +33,8 @@ static AUTO_SUSPEND_CFG_FILE: &'static str = "/usr/local/etc/auto_suspend.conf";
 static BATTERY_STATUS_FILE: &'static str = "/sys/class/power_supply/battery/status";
 
 enum PowerkeyActions {
-    SHUTDOWN,
-    SUSPEND,
+    Shutdown,
+    Suspend,
 }
 
 enum BatteryStatus {
@@ -196,14 +196,14 @@ lazy_static! {
             match POWERKEY_PROPERTIES.get("action") {
                 Some(x) => {
                     if x == "suspend" {
-                        return PowerkeyActions::SUSPEND;
+                        return PowerkeyActions::Suspend;
                     }
                 },
                 _ => ()
             };
         }
 
-        PowerkeyActions::SHUTDOWN
+        PowerkeyActions::Shutdown
     };
 
     static ref AUTO_SUSPEND_PROPERTIES: HashMap<String, String> = {
@@ -639,7 +639,7 @@ fn main() -> io::Result<()> {
     println!("\nDevice: {}\nIs OGA v1.1?: {}\nIs double push power off button active?: {}\nPOWERKEY interval time: {:?}\nPOWERKEY action: {}\nAuto suspend: {}\nAuto suspend timeout: {:?}",
              *DEVICE, *IS_OGA1, *IS_DOUBLE_PUSH_POWER_OFF_ACTIVE, *MAX_POWERKEY_INTERVAL_TIME,
              match *POWERKEY_ACTION {
-                PowerkeyActions::SUSPEND => "suspend",
+                PowerkeyActions::Suspend => "suspend",
                 _ => "shutdown",
             }, *AUTO_SUSPEND_ENABLED, *AUTO_SUSPEND_TIMEOUT);
 
@@ -703,7 +703,7 @@ fn main() -> io::Result<()> {
                                 {
                                     // two push at least in more than one second
                                     match *POWERKEY_ACTION {
-                                        PowerkeyActions::SUSPEND => suspend(),
+                                        PowerkeyActions::Suspend => suspend(),
                                         _ => power_off(),
                                     }
                                 }
