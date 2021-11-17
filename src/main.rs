@@ -576,7 +576,8 @@ fn main() -> io::Result<()> {
     let mut devs: Vec<Device> = Vec::new();
     let mut hotkey = false;
     let mut first_push_power_off: Option<SystemTime> = None;
-    let mut last_activity: SystemTime = SystemTime::now();
+    let mut last_button_push: SystemTime = SystemTime::now();
+    let mut last_charge: SystemTime = SystemTime::now();
 
     println!("\nDevice: {}\nIs OGA v1.1?: {}\nIs double push power off button active?: {}\nPOWERKEY interval time: {:?}\nPOWERKEY action: {}\nAuto suspend: {}\nAuto suspend timeout: {:?}",
              *DEVICE, *IS_OGA1, *IS_DOUBLE_PUSH_POWER_OFF_ACTIVE, *MAX_POWERKEY_INTERVAL_TIME,
@@ -644,22 +645,29 @@ fn main() -> io::Result<()> {
                         if *AUTO_SUSPEND_ENABLED {
                             let button_pushed = ev.value == 1;
 
+                            let charging: bool = match battery_status() {
+                                BatteryStatus::CHARGING => true,
+                                BatteryStatus::DISCHARGING => false,
+                            };
+
                             if button_pushed {
-                                last_activity = SystemTime::now();
-                            } else if *AUTO_SUSPEND_STAY_AWAKE_WHILE_CHARGING {
-                                match battery_status() {
-                                    BatteryStatus::CHARGING => last_activity = SystemTime::now(),
-                                    BatteryStatus::DISCHARGING => (),
-                                }
+                                last_button_push = SystemTime::now();
+                            }
+                            
+                            if charging {
+                                last_charge = SystemTime::now();
                             }
                             /*
                             println!("Event: time {}.{} type {} code {} value {} hotkey {}\nLast Push Button Time {:?}\nActual Time {:?}\n",
                                      ev.time.tv_sec, ev.time.tv_usec, ev.event_type, ev.event_code,
-                                     ev.value, hotkey, last_activity, SystemTime::now());
+                                     ev.value, hotkey, last_button_push, SystemTime::now());
                             */
-                            if last_activity.elapsed().unwrap() > *AUTO_SUSPEND_TIMEOUT {
+                            let button_push_timed_out = last_button_push.elapsed().unwrap() > *AUTO_SUSPEND_TIMEOUT;
+                            let charge_timed_out = last_charge.elapsed().unwrap() > *AUTO_SUSPEND_TIMEOUT;
+
+                            if (*AUTO_SUSPEND_STAY_AWAKE_WHILE_CHARGING && button_push_timed_out && charge_timed_out) || (!*AUTO_SUSPEND_STAY_AWAKE_WHILE_CHARGING && button_push_timed_out){
                                 suspend();
-                                last_activity = SystemTime::now();
+                                last_button_push = SystemTime::now();
                             }
                         }
                     },
