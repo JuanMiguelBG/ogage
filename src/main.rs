@@ -247,6 +247,21 @@ lazy_static! {
         Duration::from_secs(300)
     };
 
+    static ref AUTO_SUSPEND_STAY_AWAKE_WHILE_CHARGING: bool = {
+        if !AUTO_SUSPEND_PROPERTIES.is_empty() {
+            match AUTO_SUSPEND_PROPERTIES.get("auto_suspend_stay_awake_while_charging") {
+                Some(x) => {
+                    if x == "enabled" {
+                        return true;
+                    }
+                },
+                _ => ()
+            };
+        }
+
+        false
+    };
+
     static ref OGAGE_PROPERTIES: HashMap<String, String> = {
         println!("\nOGAGE PROPERTIES:");
         if Path::new(OGAGE_CFG_FILE).exists() {
@@ -513,7 +528,7 @@ fn main() -> io::Result<()> {
     let mut devs: Vec<Device> = Vec::new();
     let mut hotkey = false;
     let mut first_push_power_off: Option<SystemTime> = None;
-    let mut last_button_push: SystemTime = SystemTime::now();
+    let mut last_activity: SystemTime = SystemTime::now();
 
     println!("\nDevice: {}\nIs OGA v1.1?: {}\nIs double push power off button active?: {}\nPOWERKEY interval time: {:?}\nPOWERKEY action: {}\nAuto suspend: {}\nAuto suspend timeout: {:?}",
              *DEVICE, *IS_OGA1, *IS_DOUBLE_PUSH_POWER_OFF_ACTIVE, *MAX_POWERKEY_INTERVAL_TIME,
@@ -579,22 +594,24 @@ fn main() -> io::Result<()> {
                         }
 
                         if *AUTO_SUSPEND_ENABLED {
-                            let charging: bool = match battery_status() {
-                                BatteryStatus::CHARGING => true,
-                                BatteryStatus::DISCHARGING => false,
-                            };
+                            let button_pushed = ev.value == 1;
 
-                            if ev.value == 1 || charging {
-                                last_button_push = SystemTime::now();
+                            if button_pushed {
+                                last_activity = SystemTime::now();
+                            } else if *AUTO_SUSPEND_STAY_AWAKE_WHILE_CHARGING {
+                                match battery_status() {
+                                    BatteryStatus::CHARGING => last_activity = SystemTime::now(),
+                                    BatteryStatus::DISCHARGING => (),
+                                }
                             }
                             /*
                             println!("Event: time {}.{} type {} code {} value {} hotkey {}\nLast Push Button Time {:?}\nActual Time {:?}\n",
                                      ev.time.tv_sec, ev.time.tv_usec, ev.event_type, ev.event_code,
-                                     ev.value, hotkey, last_button_push, SystemTime::now());
+                                     ev.value, hotkey, last_activity, SystemTime::now());
                             */
-                            if last_button_push.elapsed().unwrap() > *AUTO_SUSPEND_TIMEOUT {
+                            if last_activity.elapsed().unwrap() > *AUTO_SUSPEND_TIMEOUT {
                                 suspend();
-                                last_button_push = SystemTime::now();
+                                last_activity = SystemTime::now();
                             }
                         }
                     },
