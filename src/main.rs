@@ -647,31 +647,27 @@ fn main() -> io::Result<()> {
                                 first_push_power_off = Some(next_first_push_power_off);
                             }
                         }
+                        
+                        // Variables used for both auto-suspend and auto-dimming
+                        let button_pushed = ev.value == 1;
+
+                        let charging: bool = match battery_status() {
+                            BatteryStatus::Unknown => false,
+                            BatteryStatus::Charging => true,
+                            BatteryStatus::Discharging => false,
+                            BatteryStatus::NotCharging => false,
+                            BatteryStatus::Full => true,
+                        };
+
+                        if button_pushed {
+                            last_button_push = SystemTime::now();
+                        }
+                        
+                        if charging {
+                            last_charge = SystemTime::now();
+                        }
 
                         if *AUTO_SUSPEND_ENABLED {
-                            let button_pushed = ev.value == 1;
-
-                            let charging: bool = match battery_status() {
-                                BatteryStatus::Unknown => false,
-                                BatteryStatus::Charging => true,
-                                BatteryStatus::Discharging => false,
-                                BatteryStatus::NotCharging => false,
-                                BatteryStatus::Full => true,
-                            };
-
-                            if button_pushed {
-                                last_button_push = SystemTime::now();
-
-                                if auto_dim_active {
-                                    // Restore previous brightness
-                                    auto_dim_active = false;
-                                    set_brightness(last_brightness);
-                                }
-                            }
-                            
-                            if charging {
-                                last_charge = SystemTime::now();
-                            }
                             /*
                             println!("Event: time {}.{} type {} code {} value {} hotkey {}\nLast Push Button Time {:?}\nActual Time {:?}\n",
                                      ev.time.tv_sec, ev.time.tv_usec, ev.event_type, ev.event_code,
@@ -683,11 +679,24 @@ fn main() -> io::Result<()> {
                             if (*AUTO_SUSPEND_STAY_AWAKE_WHILE_CHARGING && button_push_timed_out && charge_timed_out) || (!*AUTO_SUSPEND_STAY_AWAKE_WHILE_CHARGING && button_push_timed_out) {
                                 suspend();
                                 last_button_push = SystemTime::now();
-                            } else if !auto_dim_active && *AUTO_DIM_ENABLED && last_button_push.elapsed().unwrap() > *AUTO_DIM_TIMEOUT {
-                                // Save current brightness and dim the screen
-                                auto_dim_active = true;
-                                last_brightness = get_brightness();
-                                set_brightness(*AUTO_DIM_BRIGHTNESS);
+                            }
+                        }
+
+                        if *AUTO_DIM_ENABLED {
+                            if auto_dim_active {
+                                if button_pushed {
+                                    // Restore previous brightness
+                                    auto_dim_active = false;
+                                    set_brightness(last_brightness);
+                                }
+                            }
+                            else {
+                                if last_button_push.elapsed().unwrap() > *AUTO_DIM_TIMEOUT {
+                                    // Save current brightness and dim the screen
+                                    auto_dim_active = true;
+                                    last_brightness = get_brightness();
+                                    set_brightness(*AUTO_DIM_BRIGHTNESS);
+                                }
                             }
                         }
                     },
