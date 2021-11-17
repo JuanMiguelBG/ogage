@@ -38,8 +38,11 @@ enum PowerkeyActions {
 }
 
 enum BatteryStatus {
-    DISCHARGING,
-    CHARGING
+    Unknown,
+    Charging,
+    Discharging,
+    NotCharging,
+    Full
 }
 
 lazy_static! {
@@ -487,13 +490,14 @@ fn power_off() {
 fn battery_status() -> BatteryStatus {
     let status_str = fs::read_to_string(BATTERY_STATUS_FILE).expect("Failed to read battery status");
 
-    let status: BatteryStatus = match status_str.as_str().trim() {
-        "Charging" => BatteryStatus::CHARGING,
-        "Discharging" => BatteryStatus::DISCHARGING,
+    match status_str.as_str().trim() {
+        "Unknown" => BatteryStatus::Unknown,
+        "Charging" => BatteryStatus::Charging,
+        "Discharging" => BatteryStatus::Discharging,
+        "Not charging" => BatteryStatus::NotCharging,
+        "Full" => BatteryStatus::Full,
         _ => panic!("Unhandled battery status value"),
-    };
-
-    status
+    }
 }
 
 fn process_oga1_event(ev: &InputEvent) {
@@ -646,8 +650,11 @@ fn main() -> io::Result<()> {
                             let button_pushed = ev.value == 1;
 
                             let charging: bool = match battery_status() {
-                                BatteryStatus::CHARGING => true,
-                                BatteryStatus::DISCHARGING => false,
+                                BatteryStatus::Unknown => false,
+                                BatteryStatus::Charging => true,
+                                BatteryStatus::Discharging => false,
+                                BatteryStatus::NotCharging => false,
+                                BatteryStatus::Full => true,
                             };
 
                             if button_pushed {
