@@ -683,7 +683,7 @@ fn main() -> io::Result<()> {
                             if (*AUTO_SUSPEND_STAY_AWAKE_WHILE_CHARGING && button_push_timed_out && charge_timed_out) || (!*AUTO_SUSPEND_STAY_AWAKE_WHILE_CHARGING && button_push_timed_out) {
                                 suspend();
                                 last_button_push = SystemTime::now();
-                            } else if *AUTO_DIM_ENABLED && last_button_push.elapsed().unwrap() > *AUTO_DIM_TIMEOUT {
+                            } else if !auto_dim_active && *AUTO_DIM_ENABLED && last_button_push.elapsed().unwrap() > *AUTO_DIM_TIMEOUT {
                                 // Save current brightness and dim the screen
                                 auto_dim_active = true;
                                 last_brightness = get_brightness();
