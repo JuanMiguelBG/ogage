@@ -35,6 +35,7 @@ static BATTERY_STATUS_FILE: &'static str = "/sys/class/power_supply/battery/stat
 enum PowerkeyActions {
     Shutdown,
     Suspend,
+    Disabled
 }
 
 enum BatteryStatus {
@@ -165,7 +166,7 @@ lazy_static! {
         HashMap::new()
     };
 
-    static ref IS_DOUBLE_PUSH_POWER_OFF_ACTIVE: bool = {
+    static ref IS_DOUBLE_PUSH_POWERKEY_ACTIVE: bool = {
         if !POWERKEY_PROPERTIES.is_empty() {
             match POWERKEY_PROPERTIES.get("two_push_shutdown") {
                 Some(x) => {
@@ -197,6 +198,9 @@ lazy_static! {
                 Some(x) => {
                     if x == "suspend" {
                         return PowerkeyActions::Suspend;
+                    }
+                    else if x == "disabled" {
+                        return PowerkeyActions::Disabled;
                     }
                 },
                 _ => ()
@@ -593,7 +597,7 @@ fn process_event(_dev: &Device, ev: &InputEvent, hotkey: bool) {
                 ev.value, hotkey);
         println!("Device: {}", *DEVICE);
         println!("Is OGA v1.1: {}", *IS_OGA1);
-        println!("IS double push power off button active?: {}", *IS_DOUBLE_PUSH_POWER_OFF_ACTIVE);
+        println!("IS double push power off button active?: {}", *IS_DOUBLE_PUSH_POWERKEY_ACTIVE);
         */
 
         if hotkey {
@@ -630,16 +634,17 @@ fn main() -> io::Result<()> {
     let mut events = Events::with_capacity(1);
     let mut devs: Vec<Device> = Vec::new();
     let mut hotkey = false;
-    let mut first_push_power_off: Option<SystemTime> = None;
+    let mut first_push_powerkey: Option<SystemTime> = None;
     let mut last_button_push: SystemTime = SystemTime::now();
     let mut last_charge: SystemTime = SystemTime::now();
     let mut auto_dim_active: bool = false;
     let mut last_brightness: u32 = 0;
 
     println!("\nDevice: {}\nIs OGA v1.1?: {}\nIs double push power off button active?: {}\nPOWERKEY interval time: {:?}\nPOWERKEY action: {}\nAuto suspend: {}\nAuto suspend timeout: {:?}\nAuto suspend stay awake while charging: {}\nAuto dim: {}\nAuto dim timeout: {:?}\nAuto dim brightness: {}\nAuto dim stay awake while charging: {}",
-             *DEVICE, *IS_OGA1, *IS_DOUBLE_PUSH_POWER_OFF_ACTIVE, *MAX_POWERKEY_INTERVAL_TIME,
+             *DEVICE, *IS_OGA1, *IS_DOUBLE_PUSH_POWERKEY_ACTIVE, *MAX_POWERKEY_INTERVAL_TIME,
              match *POWERKEY_ACTION {
                 PowerkeyActions::Suspend => "suspend",
+                PowerkeyActions::Disabled => "disabled",
                 _ => "shutdown",
             }, *AUTO_SUSPEND_ENABLED, *AUTO_SUSPEND_TIMEOUT, *AUTO_SUSPEND_STAY_AWAKE_WHILE_CHARGING, *AUTO_DIM_ENABLED, *AUTO_DIM_TIMEOUT, *AUTO_DIM_BRIGHTNESS, *AUTO_DIM_STAY_AWAKE_WHILE_CHARGING);
 
@@ -689,27 +694,37 @@ fn main() -> io::Result<()> {
 
                         process_event(&dev, &ev, hotkey);
 
-                        if ev.event_code == POWER_OFF
-                            && *IS_DOUBLE_PUSH_POWER_OFF_ACTIVE
+                        if ev.event_code == POWER_OFF 
                             && ev.value == 1
                         {
-                            let next_first_push_power_off: SystemTime = SystemTime::now();
-                            if first_push_power_off.is_some() {
-                                let diff = first_push_power_off.unwrap().elapsed().unwrap();
-                                first_push_power_off = Some(next_first_push_power_off);
-                                //println!("diff: {:?})", diff);
-                                if diff >= MIN_POWERKEY_ELAPSED
-                                    && diff <= *MAX_POWERKEY_INTERVAL_TIME
-                                {
-                                    // two push at least in more than one second
-                                    match *POWERKEY_ACTION {
-                                        PowerkeyActions::Suspend => suspend(),
-                                        _ => power_off(),
+                            if *IS_DOUBLE_PUSH_POWERKEY_ACTIVE    
+                            {
+                                let next_first_push_powerkey: SystemTime = SystemTime::now();
+                                if first_push_powerkey.is_some() {
+                                    let diff = first_push_powerkey.unwrap().elapsed().unwrap();
+                                    first_push_powerkey = Some(next_first_push_powerkey);
+                                    //println!("diff: {:?})", diff);
+                                    if diff >= MIN_POWERKEY_ELAPSED
+                                        && diff <= *MAX_POWERKEY_INTERVAL_TIME
+                                    {
+                                        // two push at least in more than one second
+                                        match *POWERKEY_ACTION {
+                                            PowerkeyActions::Suspend => suspend(),
+                                            PowerkeyActions::Shutdown => power_off(),
+                                            _ => ()
+                                        }
                                     }
+                                } else {
+                                    first_push_powerkey = Some(next_first_push_powerkey);
                                 }
-                            } else {
-                                first_push_power_off = Some(next_first_push_power_off);
                             }
+                            else {
+                                match *POWERKEY_ACTION {
+                                    PowerkeyActions::Suspend => suspend(),
+                                    _ => ()
+                                }
+                            }
+
                         }
 
                         // Variables used for both auto-suspend and auto-dimming
