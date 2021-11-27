@@ -30,6 +30,7 @@ static DEVICE_FILE: &'static str = "/opt/.retrooz/device";
 static POWERKEY_CFG_FILE: &'static str = "/usr/local/etc/powerkey.conf";
 static OGAGE_CFG_FILE: &'static str = "/usr/local/etc/ogage.conf";
 static AUTO_SUSPEND_CFG_FILE: &'static str = "/usr/local/etc/auto_suspend.conf";
+static AUTO_DIM_CFG_FILE: &'static str = "/usr/local/etc/auto_dim.conf";
 static BATTERY_STATUS_FILE: &'static str = "/sys/class/power_supply/battery/status";
 
 enum PowerkeyActions {
@@ -270,9 +271,27 @@ lazy_static! {
         false
     };
 
+    static ref AUTO_DIM_PROPERTIES: HashMap<String, String> = {
+        println!("\nAUTO_DIM_PROPERTIES:");
+        if Path::new(AUTO_DIM_CFG_FILE).exists() {
+            let lines = fs::read_to_string(AUTO_DIM_CFG_FILE).expect(&("Can't read file '".to_owned() + AUTO_DIM_CFG_FILE + "'."));
+            let parsed = parse(lines.as_bytes()).expect(&("Can't parse properties of '".to_owned() + AUTO_DIM_CFG_FILE + "'."));
+
+            let map_properties = to_map(parsed);
+
+            for (key, value) in map_properties.iter() {
+                println!("\t{} / {}", key, value);
+            }
+            println!("\n");
+            return map_properties;
+        }
+
+        HashMap::new()
+    };
+    
     static ref AUTO_DIM_STAY_AWAKE_WHILE_CHARGING: bool = {
-        if !AUTO_SUSPEND_PROPERTIES.is_empty() {
-            match AUTO_SUSPEND_PROPERTIES.get("auto_dim_stay_awake_while_charging") {
+        if !AUTO_DIM_PROPERTIES.is_empty() {
+            match AUTO_DIM_PROPERTIES.get("auto_dim_stay_awake_while_charging") {
                 Some(x) => {
                     if x == "enabled" {
                         return true;
@@ -286,8 +305,8 @@ lazy_static! {
     };
 
     static ref AUTO_DIM_ENABLED: bool = {
-        if !AUTO_SUSPEND_PROPERTIES.is_empty() {
-            match AUTO_SUSPEND_PROPERTIES.get("auto_dim_time") {
+        if !AUTO_DIM_PROPERTIES.is_empty() {
+            match AUTO_DIM_PROPERTIES.get("auto_dim_time") {
                 Some(x) => {
                     if x == "enabled" {
                         return true;
@@ -302,8 +321,8 @@ lazy_static! {
 
     // timeout in seconds
     static ref AUTO_DIM_TIMEOUT: Duration = {
-        if !AUTO_SUSPEND_PROPERTIES.is_empty() {
-            match AUTO_SUSPEND_PROPERTIES.get("auto_dim_timeout") {
+        if !AUTO_DIM_PROPERTIES.is_empty() {
+            match AUTO_DIM_PROPERTIES.get("auto_dim_timeout") {
                 Some(x) => return Duration::from_secs(x.parse::<u64>().unwrap()),
                 _ => ()
             };
@@ -313,8 +332,8 @@ lazy_static! {
     };
 
     static ref AUTO_DIM_BRIGHTNESS: u32 = {
-        if !AUTO_SUSPEND_PROPERTIES.is_empty() {
-            match AUTO_SUSPEND_PROPERTIES.get("auto_dim_brightness") {
+        if !AUTO_DIM_PROPERTIES.is_empty() {
+            match AUTO_DIM_PROPERTIES.get("auto_dim_brightness") {
                 Some(x) => return x.parse::<u32>().unwrap(),
                 _ => ()
             };
