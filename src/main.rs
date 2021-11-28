@@ -319,11 +319,11 @@ lazy_static! {
         false
     };
 
-    // timeout in seconds
+    // timeout in minutes
     static ref AUTO_DIM_TIMEOUT: Duration = {
         if !AUTO_DIM_PROPERTIES.is_empty() {
             match AUTO_DIM_PROPERTIES.get("auto_dim_timeout") {
-                Some(x) => return Duration::from_secs(x.parse::<u64>().unwrap()),
+                Some(x) => return Duration::from_secs(x.parse::<u64>().unwrap() * 60),
                 _ => ()
             };
         }
@@ -331,6 +331,7 @@ lazy_static! {
         Duration::from_secs(300)
     };
 
+    // brightness level
     static ref AUTO_DIM_BRIGHTNESS: u32 = {
         if !AUTO_DIM_PROPERTIES.is_empty() {
             match AUTO_DIM_PROPERTIES.get("auto_dim_brightness") {
@@ -339,7 +340,7 @@ lazy_static! {
             };
         }
 
-        25
+        10
     };
 
     static ref OGAGE_PROPERTIES: HashMap<String, String> = {
@@ -438,20 +439,27 @@ lazy_static! {
 
 fn get_brightness() -> u32 {
     let output = Command::new("brightnessctl")
-        .arg("g")
+        .arg("-m")
         .stdout(Stdio::piped())
         .output()
         .expect("Failed to execute brightnessctl");
     let brightness_str =
         String::from_utf8(output.stdout).expect("Failed to convert stdout to string");
-    brightness_str
-        .trim()
-        .parse()
-        .expect("Failed to parse brightness string")
+
+    let brightness_vector: Vec<&str> = brightness_str.split(&[',', '%'][..]).collect();
+
+    if brightness_vector.len() > 3 {
+        return brightness_vector[3]
+                .trim()
+                .parse()
+                .expect("Failed to parse brightness string")
+    }
+
+    50
 }
 
 fn set_brightness(brightness: u32) {
-    let brightness_str = brightness.to_string();
+    let brightness_str = brightness.to_string() + "%";
     Command::new("brightnessctl")
         .args(&["s", &brightness_str])
         .output()
@@ -462,7 +470,7 @@ fn blinkon() {
     let current = get_brightness();
     set_brightness(0);
     thread::sleep(Duration::from_millis(200));
-    set_brightness(160);
+    set_brightness(100);
     thread::sleep(Duration::from_millis(200));
     set_brightness(0);
     thread::sleep(Duration::from_millis(200));
@@ -535,11 +543,11 @@ fn perf_norm() {
 }
 
 fn dark_on() {
-    set_brightness(25);
+    set_brightness(10);
 }
 
 fn dark_off() {
-    set_brightness(125);
+    set_brightness(50);
 }
 
 fn wifi_on() {
