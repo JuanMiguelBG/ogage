@@ -435,6 +435,19 @@ lazy_static! {
 
         true
     };
+
+    static ref ES_BRIGTHNESS_LOCK_FILE: &'static str = {
+        if !OGAGE_PROPERTIES.is_empty() {
+            match OGAGE_PROPERTIES.get("es_brigthness_lock_file") {
+                Some(x) => {
+                    return x;
+                },
+                _ => ()
+            };
+        }
+
+        "/home/odroid/.emulationstation/brightness.lock"
+    };
 }
 
 fn get_brightness() -> u32 {
@@ -467,6 +480,7 @@ fn set_brightness(brightness: u32) {
 }
 
 fn blinkon() {
+    create_es_brightness_lock();
     let current = get_brightness();
     set_brightness(0);
     thread::sleep(Duration::from_millis(200));
@@ -475,13 +489,16 @@ fn blinkon() {
     set_brightness(0);
     thread::sleep(Duration::from_millis(200));
     set_brightness(current);
+    remove_es_brightness_lock();
 }
 
 fn blinkoff() {
+    create_es_brightness_lock();
     let current = get_brightness();
     set_brightness(0);
     thread::sleep(Duration::from_millis(300));
     set_brightness(current);
+    remove_es_brightness_lock();
 }
 
 fn inc_brightness() {
@@ -594,6 +611,18 @@ fn battery_status() -> BatteryStatus {
     }
 }
 
+fn create_es_brightness_lock() {
+    if !Path::new(*ES_BRIGTHNESS_LOCK_FILE).exists() {
+        std::fs::File::create(*ES_BRIGTHNESS_LOCK_FILE).expect("create failed");
+    }
+}
+
+fn remove_es_brightness_lock() {
+    if Path::new(*ES_BRIGTHNESS_LOCK_FILE).exists() {
+        fs::remove_file(*ES_BRIGTHNESS_LOCK_FILE).expect("remove failed");
+    }    
+}
+
 fn process_oga1_event(ev: &InputEvent) {
     if ev.event_code == *BRIGHT_UP && *ALLOW_BRIGHTNESS {
         inc_brightness();
@@ -677,6 +706,8 @@ fn main() -> io::Result<()> {
 
     println!("Allow brightness: {}\nAllow volume: {}\nAllow wifi: {}\nAllow performance: {}\nAllow suspend: {}", 
         *ALLOW_BRIGHTNESS, *ALLOW_VOLUME, *ALLOW_WIFI, *ALLOW_PERFORMANCE, *ALLOW_SUSPEND);
+   
+    println!("Emulationstation Brighthness Lock File: {}", *ES_BRIGTHNESS_LOCK_FILE);
 
     let mut i = 0;
     for s in [
@@ -804,6 +835,7 @@ fn main() -> io::Result<()> {
                                     // Restore previous brightness
                                     auto_dim_active = false;
                                     set_brightness(last_brightness);
+                                    remove_es_brightness_lock();
                                 }
                             } else {
                                 let button_push_timed_out =
@@ -820,6 +852,7 @@ fn main() -> io::Result<()> {
                                     // Save current brightness and dim the screen
                                     auto_dim_active = true;
                                     last_brightness = get_brightness();
+                                    create_es_brightness_lock();
                                     set_brightness(*AUTO_DIM_BRIGHTNESS);
                                 }
                             }
