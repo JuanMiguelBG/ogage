@@ -480,23 +480,27 @@ fn set_brightness(brightness: u32) {
 }
 
 fn blinkon() {
-    create_es_brightness_lock();
     let current = get_brightness();
+    create_es_brightness_lock();
     set_brightness(0);
     thread::sleep(Duration::from_millis(200));
+    create_es_brightness_lock();
     set_brightness(100);
     thread::sleep(Duration::from_millis(200));
+    create_es_brightness_lock();
     set_brightness(0);
     thread::sleep(Duration::from_millis(200));
+    create_es_brightness_lock();
     set_brightness(current);
     remove_es_brightness_lock();
 }
 
 fn blinkoff() {
-    create_es_brightness_lock();
     let current = get_brightness();
+    create_es_brightness_lock();
     set_brightness(0);
     thread::sleep(Duration::from_millis(300));
+    create_es_brightness_lock();
     set_brightness(current);
     remove_es_brightness_lock();
 }
@@ -619,6 +623,7 @@ fn create_es_brightness_lock() {
 
 fn remove_es_brightness_lock() {
     if Path::new(*ES_BRIGTHNESS_LOCK_FILE).exists() {
+        thread::sleep(Duration::from_millis(200));
         fs::remove_file(*ES_BRIGTHNESS_LOCK_FILE).expect("remove failed");
     }    
 }
@@ -834,6 +839,7 @@ fn main() -> io::Result<()> {
                                 {
                                     // Restore previous brightness
                                     auto_dim_active = false;
+                                    create_es_brightness_lock();
                                     set_brightness(last_brightness);
                                     remove_es_brightness_lock();
                                 }
@@ -854,6 +860,7 @@ fn main() -> io::Result<()> {
                                     last_brightness = get_brightness();
                                     create_es_brightness_lock();
                                     set_brightness(*AUTO_DIM_BRIGHTNESS);
+                                    remove_es_brightness_lock();
                                 }
                             }
                         }
