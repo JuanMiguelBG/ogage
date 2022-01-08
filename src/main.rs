@@ -376,6 +376,17 @@ lazy_static! {
         true
     };
 
+    static ref BRIGHTNESS_STEP: u32 = {
+        if !OGAGE_PROPERTIES.is_empty() {
+            match AUTO_DIM_PROPERTIES.get("brightness_step") {
+                Some(x) => return x.parse::<u32>().unwrap(),
+                _ => ()
+            };
+        }
+
+        1
+    };
+
     static ref ALLOW_VOLUME: bool = {
         if !OGAGE_PROPERTIES.is_empty() {
             match OGAGE_PROPERTIES.get("volume") {
@@ -389,6 +400,17 @@ lazy_static! {
         }
 
         true
+    };
+
+    static ref VOLUME_STEP: u32 = {
+        if !OGAGE_PROPERTIES.is_empty() {
+            match AUTO_DIM_PROPERTIES.get("volume_step") {
+                Some(x) => return x.parse::<u32>().unwrap(),
+                _ => ()
+            };
+        }
+
+        1
     };
 
     static ref ALLOW_WIFI: bool = {
@@ -462,9 +484,10 @@ fn get_brightness() -> u32 {
     let brightness_vector: Vec<&str> = brightness_str.split(&[',', '%'][..]).collect();
 
     if brightness_vector.len() > 3 {
+        //println!("Get volume level: {}%", brightness_vector[3]);
         return brightness_vector[3]
                 .trim()
-                .parse()
+                .parse::<u32>()
                 .expect("Failed to parse brightness string")
     }
 
@@ -473,6 +496,7 @@ fn get_brightness() -> u32 {
 
 fn set_brightness(brightness: u32) {
     let brightness_str = brightness.to_string() + "%";
+    //println!("Set brightness level: {}", brightness_str);
     Command::new("brightnessctl")
         .args(&["s", &brightness_str])
         .output()
@@ -505,46 +529,69 @@ fn blinkoff() {
     remove_es_brightness_lock();
 }
 
-fn inc_brightness() {
-    Command::new("brightnessctl")
-        .args(&["s", "+2%"])
+fn get_volume() -> u32 {
+    let output = Command::new("amixer")
+        .args(&["sget", "Playback"])
+        .stdout(Stdio::piped())
         .output()
-        .expect("Failed to execute brightnessctl");
+        .expect("Failed to execute amixer");
+
+    let lines_str =
+        String::from_utf8(output.stdout).expect("Failed to convert stdout to string");
+
+    let last_line = lines_str
+        .lines()
+        .last()
+        .expect("could not get volume info");
+
+    let last = last_line
+        .split_whitespace()
+        .filter(|x| x.starts_with('[') && !x.contains("dB"))
+        .map(|s| s.trim_matches(&['[', ']', '%'] as &[_]))
+        .collect::<Vec<&str>>();
+
+    if last.len() > 0 {
+        //println!("Get volume level: {}%", last[0]);
+        return last[0]
+                .trim()
+                .parse::<u32>()
+                .expect("Failed to parse volume  string")
+    }
+
+    50
+}
+
+fn set_volume(volume: u32) {
+    let volume_str = volume.to_string() + "%";
+    //println!("Set volume level: {}", volume_str);
+    Command::new("amixer")
+        .args(&["sset", "Playback", &volume_str])
+        .output()
+        .expect("Failed to execute amixer");
+}
+
+fn inc_brightness() {
+    set_brightness(get_brightness() + *BRIGHTNESS_STEP);
 }
 
 fn dec_brightness() {
-    Command::new("brightnessctl")
-        .args(&["-n", "s", "2%-"])
-        .output()
-        .expect("Failed to execute brightnessctl");
+    set_brightness(get_brightness() - *BRIGHTNESS_STEP);
 }
 
 fn inc_volume() {
-    Command::new("amixer")
-        .args(&["-q", "sset", "Playback", "1%+"])
-        .output()
-        .expect("Failed to execute amixer");
+    set_volume(get_volume() + *VOLUME_STEP);
 }
 
 fn dec_volume() {
-    Command::new("amixer")
-        .args(&["-q", "sset", "Playback", "1%-"])
-        .output()
-        .expect("Failed to execute amixer");
+    set_volume(get_volume() - *VOLUME_STEP);
 }
 
 fn mute_volume() {
-    Command::new("amixer")
-        .args(&["sset", "Playback", "0"])
-        .output()
-        .expect("Failed to execute amixer");
+    set_volume(0);
 }
 
 fn norm_volume() {
-    Command::new("amixer")
-        .args(&["sset", "Playback", "180"])
-        .output()
-        .expect("Failed to execute amixer");
+    set_volume(75);
 }
 
 fn perf_max() {
@@ -701,7 +748,7 @@ fn main() -> io::Result<()> {
     let mut auto_dim_active: bool = false;
     let mut last_brightness: u32 = 0;
 
-    println!("\nDevice: {}\nIs OGA v1.1?: {}\nIs double push power off button active?: {}\nPOWERKEY interval time: {:?}\nPOWERKEY action: {}\nAuto suspend: {}\nAuto suspend timeout: {:?}\nAuto suspend stay awake while charging: {}\nAuto dim: {}\nAuto dim timeout: {:?}\nAuto dim brightness: {}\nAuto dim stay awake while charging: {}",
+    println!("\nDevice: {}\nIs OGA v1.1?: {}\nIs double push power off button active?: {}\nPOWERKEY interval time: {:?}\nPOWERKEY action: {}\nAuto suspend: {}\nAuto suspend timeout: {:?}\nAuto suspend stay awake while charging: {}\nAuto dim: {}\nAuto dim timeout: {:?}\nAuto dim brightness: {}%\nAuto dim stay awake while charging: {}",
              *DEVICE, *IS_OGA1, *IS_DOUBLE_PUSH_POWERKEY_ACTIVE, *MAX_POWERKEY_INTERVAL_TIME,
              match *POWERKEY_ACTION {
                 PowerkeyActions::Suspend => "suspend",
@@ -709,8 +756,8 @@ fn main() -> io::Result<()> {
                 _ => "shutdown",
             }, *AUTO_SUSPEND_ENABLED, *AUTO_SUSPEND_TIMEOUT, *AUTO_SUSPEND_STAY_AWAKE_WHILE_CHARGING, *AUTO_DIM_ENABLED, *AUTO_DIM_TIMEOUT, *AUTO_DIM_BRIGHTNESS, *AUTO_DIM_STAY_AWAKE_WHILE_CHARGING);
 
-    println!("Allow brightness: {}\nAllow volume: {}\nAllow wifi: {}\nAllow performance: {}\nAllow suspend: {}", 
-        *ALLOW_BRIGHTNESS, *ALLOW_VOLUME, *ALLOW_WIFI, *ALLOW_PERFORMANCE, *ALLOW_SUSPEND);
+    println!("Allow brightness: {}\nBrightness step: {}%\nAllow volume: {}\nVolume step: {}%\nAllow wifi: {}\nAllow performance: {}\nAllow suspend: {}", 
+        *ALLOW_BRIGHTNESS, *BRIGHTNESS_STEP, *ALLOW_VOLUME, *VOLUME_STEP, *ALLOW_WIFI, *ALLOW_PERFORMANCE, *ALLOW_SUSPEND);
    
     println!("Emulationstation Brighthness Lock File: {}", *ES_BRIGTHNESS_LOCK_FILE);
 
