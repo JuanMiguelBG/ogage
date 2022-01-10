@@ -378,7 +378,7 @@ lazy_static! {
 
     static ref BRIGHTNESS_STEP: u32 = {
         if !OGAGE_PROPERTIES.is_empty() {
-            match AUTO_DIM_PROPERTIES.get("brightness_step") {
+            match OGAGE_PROPERTIES.get("brightness_step") {
                 Some(x) => return x.parse::<u32>().unwrap(),
                 _ => ()
             };
@@ -404,7 +404,7 @@ lazy_static! {
 
     static ref VOLUME_STEP: u32 = {
         if !OGAGE_PROPERTIES.is_empty() {
-            match AUTO_DIM_PROPERTIES.get("volume_step") {
+            match OGAGE_PROPERTIES.get("volume_step") {
                 Some(x) => return x.parse::<u32>().unwrap(),
                 _ => ()
             };
@@ -575,7 +575,14 @@ fn inc_brightness() {
 }
 
 fn dec_brightness() {
-    set_brightness(get_brightness() - *BRIGHTNESS_STEP);
+    let mut brightness = get_brightness();
+    if brightness <= *BRIGHTNESS_STEP {
+        brightness = 1;
+    }
+    else {
+        brightness = brightness - *BRIGHTNESS_STEP;
+    }
+    set_brightness( brightness );
 }
 
 fn inc_volume() {
@@ -583,7 +590,14 @@ fn inc_volume() {
 }
 
 fn dec_volume() {
-    set_volume(get_volume() - *VOLUME_STEP);
+    let mut volume = get_volume();
+    if volume < *VOLUME_STEP {
+        volume = 0;
+    }
+    else {
+        volume = volume - *VOLUME_STEP;
+    }
+    set_volume(volume);
 }
 
 fn mute_volume() {
