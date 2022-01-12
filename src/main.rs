@@ -571,7 +571,14 @@ fn set_volume(volume: u32) {
 }
 
 fn inc_brightness() {
-    set_brightness(get_brightness() + *BRIGHTNESS_STEP);
+    let mut brightness = get_brightness();
+    if brightness < *BRIGHTNESS_STEP {
+        brightness = *BRIGHTNESS_STEP;
+    }
+    else {
+        brightness = brightness + *BRIGHTNESS_STEP;
+    }
+    set_brightness(brightness);
 }
 
 fn dec_brightness() {
@@ -582,11 +589,18 @@ fn dec_brightness() {
     else {
         brightness = brightness - *BRIGHTNESS_STEP;
     }
-    set_brightness( brightness );
+    set_brightness(brightness);
 }
 
 fn inc_volume() {
-    set_volume(get_volume() + *VOLUME_STEP);
+    let mut volume = get_volume();
+    if volume < *VOLUME_STEP {
+        volume = *VOLUME_STEP;
+    }
+    else {
+        volume = volume + *VOLUME_STEP;
+    }
+    set_volume(volume);
 }
 
 fn dec_volume() {
