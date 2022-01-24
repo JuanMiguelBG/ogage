@@ -7,7 +7,7 @@
 * 1 (Y Button) - Volume Mute
 * 4 (L1 Button) - Performance Normal
 * 6 (L2 Button) - Performance Max
-* 5 (R2 Button) - Wifi On
+* 5 (R1 Button) - Wifi On
 * 7 (R2 Button) - Wifi Off
 * 8 (D-Pad Up) - Brightness Up
 * 9 (D-Pad Down) - Brightness Down
@@ -27,7 +27,7 @@
 * 2 (XButton) - Sleep
 * 4 (L1 Button) - Performance Normal
 * 6 (L2 Button) - Performance Max
-* 5 (R2 Button) - Wifi On
+* 5 (R1 Button) - Wifi On
 * 7 (R2 Button) - Wifi Off
 * 8 (D-Pad Up) - Volume 75%
 * 9 (D-Pad Down) - Volume Mute
@@ -45,7 +45,7 @@
 * 1 (Y Button) - Volume Mute
 * 4 (L1 Button) - Performance Normal
 * 6 (L2 Button) - Performance Max
-* 5 (R2 Button) - Wifi On
+* 5 (R1 Button) - Wifi On
 * 7 (R2 Button) - Wifi Off
 * 8 (D-Pad Up) - Brightness Up
 * 9 (D-Pad Down) - Brightness Down
@@ -64,7 +64,7 @@
 * 1 (Y Button) - Volume Mute
 * 4 (L1 Button) - Performance Normal
 * 6 (L2 Button) - Performance Max
-* 5 (R2 Button) - Wifi On
+* 5 (R1 Button) - Wifi On
 * 7 (R2 Button) - Wifi Off
 * 8 (D-Pad Up) - Brightness Up
 * 9 (D-Pad Down) - Brightness Down
