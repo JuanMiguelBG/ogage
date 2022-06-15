@@ -1,7 +1,7 @@
 ## RG503
 ![](./rg503.png)
 
-Global Hotkey: Right Thumbstick (R3)
+Global Hotkey: F Button
 
 R3 and Dpad Up = Brightness Up  
 R3 and Dpad Down = Brightness Down  
