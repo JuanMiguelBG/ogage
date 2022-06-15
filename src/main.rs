@@ -18,26 +18,27 @@ use std::process::{Command, Stdio};
 use std::thread;
 use std::time::{Duration, SystemTime};
 
-static PERF_MAX: EventCode = EventCode::EV_KEY(EV_KEY::BTN_TL2);
+static HOTKEY:      EventCode = EventCode::EV_KEY(EV_KEY::BTN_THUMBR);
+static BRIGHT_UP:   EventCode = EventCode::EV_KEY(EV_KEY::BTN_DPAD_UP);
+static BRIGHT_DOWN: EventCode = EventCode::EV_KEY(EV_KEY::BTN_DPAD_DOWN);
+static DARK_ON:     EventCode = EventCode::EV_KEY(EV_KEY::BTN_DPAD_LEFT);
+static DARK_OFF:    EventCode = EventCode::EV_KEY(EV_KEY::BTN_DPAD_RIGHT);
+static VOL_UP:      EventCode = EventCode::EV_KEY(EV_KEY::KEY_VOLUMEUP);
+static VOL_DOWN:    EventCode = EventCode::EV_KEY(EV_KEY::KEY_VOLUMEDOWN);
+static VOL_UP_H:    EventCode = EventCode::EV_KEY(EV_KEY::BTN_NORTH);
+static VOL_DOWN_H:  EventCode = EventCode::EV_KEY(EV_KEY::BTN_SOUTH);
+static MUTE:        EventCode = EventCode::EV_KEY(EV_KEY::BTN_WEST);
+static VOL_NORM:    EventCode = EventCode::EV_KEY(EV_KEY::BTN_EAST);
+static PERF_MAX:  EventCode = EventCode::EV_KEY(EV_KEY::BTN_TL2);
 static PERF_NORM: EventCode = EventCode::EV_KEY(EV_KEY::BTN_TL);
-static DARK_ON: EventCode = EventCode::EV_KEY(EV_KEY::BTN_DPAD_LEFT);
-static DARK_OFF: EventCode = EventCode::EV_KEY(EV_KEY::BTN_DPAD_RIGHT);
-static WIFI_ON: EventCode = EventCode::EV_KEY(EV_KEY::BTN_TR);
-static WIFI_OFF: EventCode = EventCode::EV_KEY(EV_KEY::BTN_TR2);
-static POWER_OFF: EventCode = EventCode::EV_KEY(EV_KEY::KEY_POWER);
-static MIN_POWERKEY_ELAPSED: Duration = Duration::from_secs(1);
-static DEVICE_FILE: &'static str = "/opt/.retrooz/device";
-static POWERKEY_CFG_FILE: &'static str = "/usr/local/etc/powerkey.conf";
+static WIFI_ON:   EventCode = EventCode::EV_KEY(EV_KEY::BTN_TR);
+static WIFI_OFF:  EventCode = EventCode::EV_KEY(EV_KEY::BTN_TR2);
+static POWER:     EventCode = EventCode::EV_KEY(EV_KEY::KEY_POWER);
+static HEADPHONE_INSERT:  EventCode = EventCode::EV_SW(EV_SW::SW_HEADPHONE_INSERT);
 static OGAGE_CFG_FILE: &'static str = "/usr/local/etc/ogage.conf";
 static AUTO_SUSPEND_CFG_FILE: &'static str = "/usr/local/etc/auto_suspend.conf";
 static AUTO_DIM_CFG_FILE: &'static str = "/usr/local/etc/auto_dim.conf";
 static BATTERY_STATUS_FILE: &'static str = "/sys/class/power_supply/battery/status";
-
-enum PowerkeyActions {
-    Shutdown,
-    Suspend,
-    Disabled
-}
 
 enum BatteryStatus {
     Unknown,
@@ -48,168 +49,6 @@ enum BatteryStatus {
 }
 
 lazy_static! {
-    static ref DEVICE: &'static str = {
-        if Path::new(DEVICE_FILE).exists() {
-            let lines = fs::read_to_string(DEVICE_FILE).expect(&("Can't read file '".to_owned() + DEVICE_FILE + "'.")).trim_end_matches(&['\r', '\n'][..]).to_string();
-            if !lines.is_empty() {
-                return Box::leak(lines.into_boxed_str());
-            }
-        }
-
-        "rgb10maxtop"
-    };
-
-    static ref IS_OGA1: bool = {
-        if *DEVICE == "oga1" {
-            return true;
-        }
-        // OGS, OGA, RGB10 MAX/MAX2
-        false
-    };
-
-    static ref HOTKEY: EventCode = {
-        let device_str = DEVICE.to_string();
-        if device_str.starts_with("rgb10max") {
-            if device_str.ends_with("top") {
-                return EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY4);
-            }
-            else { // native
-                return EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY2);
-            }
-        }
-
-        // OGS, OGA and OGA 1.1
-        EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY6)
-    };
-
-    static ref BRIGHT_UP: EventCode = {
-        if *IS_OGA1 {
-            return EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY5);
-        }
-
-        // OGS, OGA, RGB10 MAX/MAX2
-        EventCode::EV_KEY(EV_KEY::BTN_DPAD_UP)
-    };
-
-    static ref BRIGHT_DOWN: EventCode = {
-        if *IS_OGA1 {
-            return EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY4);
-        }
-
-        // OGS, OGA, RGB10 MAX/MAX2
-        EventCode::EV_KEY(EV_KEY::BTN_DPAD_DOWN)
-    };
-
-    static ref VOL_UP: EventCode = {
-        if *IS_OGA1 {
-            return EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY3);
-        }
-
-        // OGS, OGA, RGB10 MAX/MAX2
-        EventCode::EV_KEY(EV_KEY::BTN_NORTH)
-    };
-
-    static ref VOL_DOWN: EventCode = {
-        if *IS_OGA1 {
-            return EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY2);
-        }
-
-        // OGS, OGA, RGB10 MAX/MAX2
-        EventCode::EV_KEY(EV_KEY::BTN_SOUTH)
-    };
-
-    static ref MUTE: EventCode = {
-        if *IS_OGA1 {
-            return EventCode::EV_KEY(EV_KEY::BTN_DPAD_DOWN);
-        }
-
-        // OGS, OGA, RGB10 MAX/MAX2
-        EventCode::EV_KEY(EV_KEY::BTN_WEST)
-    };
-
-    static ref VOL_NORM: EventCode = {
-        if *IS_OGA1 {
-            return EventCode::EV_KEY(EV_KEY::BTN_DPAD_UP);
-        }
-
-        // OGS, OGA, RGB10 MAX/MAX2
-        EventCode::EV_KEY(EV_KEY::BTN_EAST)
-    };
-
-    static ref SUSPEND: EventCode = {
-        let device_str = DEVICE.to_string();
-        if *IS_OGA1 {
-            return EventCode::EV_KEY(EV_KEY::BTN_NORTH);
-        }
-        else if device_str.starts_with("rgb10max") && device_str.ends_with("native") {
-            return EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY4);
-        }
-
-        // OGS, OGA, RGB10 MAX/MAX2 Top
-        EventCode::EV_KEY(EV_KEY::BTN_TRIGGER_HAPPY2)
-    };
-
-    static ref POWERKEY_PROPERTIES: HashMap<String, String> = {
-        println!("\nPOWERKEY_PROPERTIES:");
-        if Path::new(POWERKEY_CFG_FILE).exists() {
-            let lines = fs::read_to_string(POWERKEY_CFG_FILE).expect(&("Can't read file '".to_owned() + POWERKEY_CFG_FILE + "'."));
-            let parsed = parse(lines.as_bytes()).expect(&("Can't parse properties of '".to_owned() + POWERKEY_CFG_FILE + "'."));
-
-            let map_properties = to_map(parsed);
-
-            for (key, value) in map_properties.iter() {
-                println!("\t{} / {}", key, value);
-            }
-            println!("\n");
-            return map_properties;
-        }
-
-        HashMap::new()
-    };
-
-    static ref IS_DOUBLE_PUSH_POWERKEY_ACTIVE: bool = {
-        if !POWERKEY_PROPERTIES.is_empty() {
-            match POWERKEY_PROPERTIES.get("two_push_shutdown") {
-                Some(x) => {
-                    if x == "enabled" {
-                        return true;
-                    }
-                },
-                _ => ()
-            };
-        }
-
-        false
-    };
-
-    static ref MAX_POWERKEY_INTERVAL_TIME: Duration = {
-        if !POWERKEY_PROPERTIES.is_empty() {
-            match POWERKEY_PROPERTIES.get("max_interval_time") {
-                Some(x) => return Duration::from_secs(x.parse::<u64>().unwrap() + MIN_POWERKEY_ELAPSED.as_secs()),
-                None => return Duration::from_secs(2),
-            };
-        }
-
-        Duration::from_secs(2)
-    };
-
-    static ref POWERKEY_ACTION: PowerkeyActions = {
-        if !POWERKEY_PROPERTIES.is_empty() {
-            match POWERKEY_PROPERTIES.get("action") {
-                Some(x) => {
-                    if x == "suspend" {
-                        return PowerkeyActions::Suspend;
-                    }
-                    else if x == "disabled" {
-                        return PowerkeyActions::Disabled;
-                    }
-                },
-                _ => ()
-            };
-        }
-
-        PowerkeyActions::Shutdown
-    };
 
     static ref AUTO_SUSPEND_PROPERTIES: HashMap<String, String> = {
         println!("\nAUTO_SUSPEND_PROPERTIES:");
@@ -623,18 +462,18 @@ fn norm_volume() {
 }
 
 fn perf_max() {
-    Command::new("perfmax")
-        .arg("none")
+    Command::new("sudo")
+        .args(&["perfmax", "On"])
         .output()
-        .expect("Failed to execute performance");
+        .expect("Failed to execute max-performance");
     blinkon();
 }
 
 fn perf_norm() {
-    Command::new("perfnorm")
-        .arg("none")
+    Command::new("sudo")
+        .arg("perfnorm")
         .output()
-        .expect("Failed to execute performance");
+        .expect("Failed to execute normal-performance");
     blinkoff();
 }
 
@@ -703,16 +542,12 @@ fn remove_es_brightness_lock() {
     }    
 }
 
-fn process_oga1_event(ev: &InputEvent) {
-    if ev.event_code == *BRIGHT_UP && *ALLOW_BRIGHTNESS {
-        inc_brightness();
-    } else if ev.event_code == *BRIGHT_DOWN && *ALLOW_BRIGHTNESS {
-        dec_brightness();
-    } else if ev.event_code == *VOL_UP && *ALLOW_VOLUME {
-        inc_volume();
-    } else if ev.event_code == *VOL_DOWN && *ALLOW_VOLUME {
-        dec_volume();
-    }
+fn headphone_insert() {
+    Command::new("amixer").args(&["-q", "sset", "'Playback Path'", "HP"]).output().expect("Failed to execute amixer to set 'HP'");
+}
+
+fn headphone_remove() {
+    Command::new("amixer").args(&["-q", "sset", "'Playback Path'", "SPK"]).output().expect("Failed to execute amixer to set 'SPK'");
 }
 
 fn process_event(_dev: &Device, ev: &InputEvent, hotkey: bool) {
@@ -737,12 +572,17 @@ fn process_event(_dev: &Device, ev: &InputEvent, hotkey: bool) {
         */
 
         if hotkey {
-            if !*IS_OGA1 {
-                process_oga1_event(ev);
-            }
-            if ev.event_code == *MUTE && *ALLOW_VOLUME {
+            if ev.event_code == BRIGHT_UP && *ALLOW_BRIGHTNESS {
+                inc_brightness();
+            } else if ev.event_code == BRIGHT_DOWN && *ALLOW_BRIGHTNESS {
+                dec_brightness();
+            } else if ev.event_code == VOL_UP_H && *ALLOW_BRIGHTNESS {
+                inc_brightness();
+            } else if ev.event_code == VOL_DOWN_H && *ALLOW_BRIGHTNESS {
+                dec_brightness();
+            } else if ev.event_code == MUTE && *ALLOW_VOLUME {
                 mute_volume();
-            } else if ev.event_code == *VOL_NORM && *ALLOW_VOLUME {
+            } else if ev.event_code == VOL_NORM && *ALLOW_VOLUME {
                 norm_volume();
             } else if ev.event_code == PERF_MAX && *ALLOW_PERFORMANCE {
                 perf_max();
@@ -756,11 +596,23 @@ fn process_event(_dev: &Device, ev: &InputEvent, hotkey: bool) {
                 wifi_on();
             } else if ev.event_code == WIFI_OFF && *ALLOW_WIFI {
                 wifi_off();
-            } else if ev.event_code == *SUSPEND && *ALLOW_SUSPEND {
-                suspend();
+            } else if ev.event_code == POWER {
+                power_off();
             }
-        } else if *IS_OGA1 {
-            process_oga1_event(ev);
+        }
+        if ev.event_code == VOL_UP {
+            inc_volume();
+        } else if ev.event_code == VOL_DOWN {
+            dec_volume();
+        } else if ev.event_code == POWER && *ALLOW_SUSPEND {
+            suspend();
+        } else if ev.event_code == HEADPHONE_INSERT {
+            headphone_insert();
+        }
+    }
+    if ev.value == 0 {
+        if ev.event_code == HEADPHONE_INSERT {
+            headphone_remove();
         }
     }
 }
@@ -770,22 +622,16 @@ fn main() -> io::Result<()> {
     let mut events = Events::with_capacity(1);
     let mut devs: Vec<Device> = Vec::new();
     let mut hotkey = false;
-    let mut first_push_powerkey: Option<SystemTime> = None;
     let mut last_button_push: SystemTime = SystemTime::now();
     let mut last_charge: SystemTime = SystemTime::now();
     let mut auto_dim_active: bool = false;
     let mut last_brightness: u32 = 0;
 
-    println!("\nDevice: {}\nIs OGA v1.1?: {}\nIs double push power off button active?: {}\nPOWERKEY interval time: {:?}\nPOWERKEY action: {}\nAuto suspend: {}\nAuto suspend timeout: {:?}\nAuto suspend stay awake while charging: {}\nAuto dim: {}\nAuto dim timeout: {:?}\nAuto dim brightness: {}%\nAuto dim stay awake while charging: {}",
-             *DEVICE, *IS_OGA1, *IS_DOUBLE_PUSH_POWERKEY_ACTIVE, *MAX_POWERKEY_INTERVAL_TIME,
-             match *POWERKEY_ACTION {
-                PowerkeyActions::Suspend => "suspend",
-                PowerkeyActions::Disabled => "disabled",
-                _ => "shutdown",
-            }, *AUTO_SUSPEND_ENABLED, *AUTO_SUSPEND_TIMEOUT, *AUTO_SUSPEND_STAY_AWAKE_WHILE_CHARGING, *AUTO_DIM_ENABLED, *AUTO_DIM_TIMEOUT, *AUTO_DIM_BRIGHTNESS, *AUTO_DIM_STAY_AWAKE_WHILE_CHARGING);
+    println!("Auto suspend: {}\nAuto suspend timeout: {:?}\nAuto suspend stay awake while charging: {}\nAuto dim: {}\nAuto dim timeout: {:?}\nAuto dim brightness: {}%\nAuto dim stay awake while charging: {}",
+             *AUTO_SUSPEND_ENABLED, *AUTO_SUSPEND_TIMEOUT, *AUTO_SUSPEND_STAY_AWAKE_WHILE_CHARGING, *AUTO_DIM_ENABLED, *AUTO_DIM_TIMEOUT, *AUTO_DIM_BRIGHTNESS, *AUTO_DIM_STAY_AWAKE_WHILE_CHARGING);
 
-    println!("Allow brightness: {}\nBrightness step: {}%\nAllow volume: {}\nVolume step: {}%\nAllow wifi: {}\nAllow performance: {}\nAllow suspend: {}", 
-        *ALLOW_BRIGHTNESS, *BRIGHTNESS_STEP, *ALLOW_VOLUME, *VOLUME_STEP, *ALLOW_WIFI, *ALLOW_PERFORMANCE, *ALLOW_SUSPEND);
+    println!("Allow brightness: {}\nBrightness step: {}%\nAllow volume: {}\nVolume step: {}%\nAllow wifi: {}\nAllow performance: {}\n", 
+        *ALLOW_BRIGHTNESS, *BRIGHTNESS_STEP, *ALLOW_VOLUME, *VOLUME_STEP, *ALLOW_WIFI, *ALLOW_PERFORMANCE);
    
     println!("Emulationstation Brighthness Lock File: {}", *ES_BRIGTHNESS_LOCK_FILE);
 
@@ -823,7 +669,7 @@ fn main() -> io::Result<()> {
                     Ok(k) => {
                         let ev = &k.1;
                         //println!("Hotkey: {} - {} - {}", *HOTKEY, ev.event_code, hotkey);
-                        if ev.event_code == *HOTKEY {
+                        if ev.event_code == HOTKEY {
                             hotkey = ev.value == 1;
                             //println!("Hotkey: {} - {}", *HOTKEY, hotkey);
                             //let grab = if hotkey { GrabMode::Grab } else { GrabMode::Ungrab };
@@ -831,39 +677,6 @@ fn main() -> io::Result<()> {
                         }
 
                         process_event(&dev, &ev, hotkey);
-
-                        if ev.event_code == POWER_OFF 
-                            && ev.value == 1
-                        {
-                            if *IS_DOUBLE_PUSH_POWERKEY_ACTIVE    
-                            {
-                                let next_first_push_powerkey: SystemTime = SystemTime::now();
-                                if first_push_powerkey.is_some() {
-                                    let diff = first_push_powerkey.unwrap().elapsed().unwrap();
-                                    first_push_powerkey = Some(next_first_push_powerkey);
-                                    //println!("diff: {:?})", diff);
-                                    if diff >= MIN_POWERKEY_ELAPSED
-                                        && diff <= *MAX_POWERKEY_INTERVAL_TIME
-                                    {
-                                        // two push at least in more than one second
-                                        match *POWERKEY_ACTION {
-                                            PowerkeyActions::Suspend => suspend(),
-                                            PowerkeyActions::Shutdown => power_off(),
-                                            _ => ()
-                                        }
-                                    }
-                                } else {
-                                    first_push_powerkey = Some(next_first_push_powerkey);
-                                }
-                            }
-                            else {
-                                match *POWERKEY_ACTION {
-                                    PowerkeyActions::Suspend => suspend(),
-                                    _ => ()
-                                }
-                            }
-
-                        }
 
                         // Variables used for both auto-suspend and auto-dimming
                         let button_pushed = ev.value == 1;

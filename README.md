@@ -1,76 +1,27 @@
-## Odroid Go Super
-![](https://github.com/southoz/RetroOZ/blob/main/wiki/images/Buttons_OGS.png)
-### Hotkey - 17
-* 0 (B Button) - Volume Up
-* 1 (A Button) - Volume 75%
-* 2 (X Button) - Volume Down
-* 1 (Y Button) - Volume Mute
-* 4 (L1 Button) - Performance Normal
-* 6 (L2 Button) - Performance Max
-* 5 (R1 Button) - Wifi On
-* 7 (R2 Button) - Wifi Off
-* 8 (D-Pad Up) - Brightness Up
-* 9 (D-Pad Down) - Brightness Down
-* 10 (D-Pad Left) - Brightness 10%
-* 11 (D-Pad Right) - Brightness 50%
-* 13 (Start) - Sleep
+## RG503
+![](./rg503.png)
+
+Global Hotkey: Right Thumbstick (R3)
+
+R3 and Dpad Up = Brightness Up
+R3 and Dpad Down = Brightness Down
+R3 and Dpad Left = Dark on
+R3 and Dpad Right = Dark off
+R3 and Volume Up = Brightness Up (Can be held for continuous brightness increase)
+R3 and Volume Down = Brightness Down (Can be held for continuous brightness decrease)
+R3 and X = Volume Up
+R3 and B = Volume Down
+R3 and Y = Mute
+R3 and A = Volume 75%
+R3 and L1 = Normal Performance
+R3 and L2 = Max Performance
+R3 and R1 = Wifi On
+R3 and R2 = Wifi Off
+R3 and Power = Safely shutdown device
+Power (Short Press) = Put device to sleep
 
 -----
 
-## Odroid Go Advance
-![](https://github.com/southoz/RetroOZ/blob/main/wiki/images/Buttons_OGA.png)
-* 13 - Volume Down
-* 14 - Volume Up
-* 15 - Brightness Down
-* 16 - Brightness Up
-### Hotkey - 17
-* 2 (XButton) - Sleep
-* 4 (L1 Button) - Performance Normal
-* 6 (L2 Button) - Performance Max
-* 5 (R1 Button) - Wifi On
-* 7 (R2 Button) - Wifi Off
-* 8 (D-Pad Up) - Volume 75%
-* 9 (D-Pad Down) - Volume Mute
-* 10 (D-Pad Left) - Brightness 10%
-* 11 (D-Pad Right) - Brightness 50%
-
------
-
-## RGB10 Max/Max2 - Top
-![](https://github.com/southoz/RetroOZ/blob/main/wiki/images/Buttons_RGB10_Max.png)
-### Hotkey - 15
-* 0 (B Button) - Volume Up
-* 1 (A Button) - Volume 75%
-* 2 (X Button) - Volume Down
-* 1 (Y Button) - Volume Mute
-* 4 (L1 Button) - Performance Normal
-* 6 (L2 Button) - Performance Max
-* 5 (R1 Button) - Wifi On
-* 7 (R2 Button) - Wifi Off
-* 8 (D-Pad Up) - Brightness Up
-* 9 (D-Pad Down) - Brightness Down
-* 10 (D-Pad Left) - Brightness 10%
-* 11 (D-Pad Right) - Brightness 50%
-* 13 (Start) - Sleep
-
------
-
-## RGB10 Max/Max2 - Native
-![](https://github.com/southoz/RetroOZ/blob/main/wiki/images/Buttons_RGB10_Max.png)
-### Hotkey - 13
-* 0 (B Button) - Volume Up
-* 1 (A Button) - Volume 75%
-* 2 (X Button) - Volume Down
-* 1 (Y Button) - Volume Mute
-* 4 (L1 Button) - Performance Normal
-* 6 (L2 Button) - Performance Max
-* 5 (R1 Button) - Wifi On
-* 7 (R2 Button) - Wifi Off
-* 8 (D-Pad Up) - Brightness Up
-* 9 (D-Pad Down) - Brightness Down
-* 10 (D-Pad Left) - Brightness 10%
-* 11 (D-Pad Right) - Brightness 50%
-* 15 (Start) - Sleep
 
 Prequisites
 ===========
@@ -98,7 +49,7 @@ sudo apt install brightnessctl rustc autotools-dev automake libtool libtool-bin 
 Build
 =====
 ```
-git clone https://github.com/JuanMiguelBG/ogage.git
+git clone https://github.com/JuanMiguelBG/ogage.git -b 503
 cd ogage
 cargo build --release
 strip target/release/ogage
