@@ -576,10 +576,14 @@ fn process_event(_dev: &Device, ev: &InputEvent, hotkey: bool) {
                 inc_brightness();
             } else if ev.event_code == BRIGHT_DOWN && *ALLOW_BRIGHTNESS {
                 dec_brightness();
-            } else if ev.event_code == VOL_UP_H && *ALLOW_BRIGHTNESS {
+            } else if ev.event_code == VOL_UP && *ALLOW_BRIGHTNESS {
                 inc_brightness();
-            } else if ev.event_code == VOL_DOWN_H && *ALLOW_BRIGHTNESS {
+            } else if ev.event_code == VOL_DOWN && *ALLOW_BRIGHTNESS {
                 dec_brightness();
+            } else if ev.event_code == VOL_UP_H && *ALLOW_VOLUME {
+                inc_volume();
+            } else if ev.event_code == VOL_DOWN_H && *ALLOW_VOLUME {
+                dec_volume();
             } else if ev.event_code == MUTE && *ALLOW_VOLUME {
                 mute_volume();
             } else if ev.event_code == VOL_NORM && *ALLOW_VOLUME {
@@ -596,21 +600,27 @@ fn process_event(_dev: &Device, ev: &InputEvent, hotkey: bool) {
                 wifi_on();
             } else if ev.event_code == WIFI_OFF && *ALLOW_WIFI {
                 wifi_off();
-            } else if ev.event_code == POWER {
+            } else if ev.event_code == POWER && *ALLOW_SUSPEND {
                 power_off();
             }
+        } else {
+            if ev.event_code == VOL_UP {
+                inc_volume();
+            } else if ev.event_code == VOL_DOWN {
+                dec_volume();
+            } else if ev.event_code == POWER {
+                if *ALLOW_SUSPEND {
+                    suspend();
+                }
+                else {
+                    power_off();
+                }
+            } 
         }
-        if ev.event_code == VOL_UP {
-            inc_volume();
-        } else if ev.event_code == VOL_DOWN {
-            dec_volume();
-        } else if ev.event_code == POWER && *ALLOW_SUSPEND {
-            suspend();
-        } else if ev.event_code == HEADPHONE_INSERT {
+        if ev.event_code == HEADPHONE_INSERT {
             headphone_insert();
         }
-    }
-    if ev.value == 0 {
+    } else if ev.value == 0 {
         if ev.event_code == HEADPHONE_INSERT {
             headphone_remove();
         }
