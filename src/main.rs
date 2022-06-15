@@ -18,7 +18,8 @@ use std::process::{Command, Stdio};
 use std::thread;
 use std::time::{Duration, SystemTime};
 
-static HOTKEY:      EventCode = EventCode::EV_KEY(EV_KEY::BTN_THUMBR);
+//static HOTKEY:      EventCode = EventCode::EV_KEY(EV_KEY::BTN_THUMBR);
+static HOTKEY:      EventCode = EventCode::EV_KEY(EV_KEY::BTN_MODE);
 static BRIGHT_UP:   EventCode = EventCode::EV_KEY(EV_KEY::BTN_DPAD_UP);
 static BRIGHT_DOWN: EventCode = EventCode::EV_KEY(EV_KEY::BTN_DPAD_DOWN);
 static DARK_ON:     EventCode = EventCode::EV_KEY(EV_KEY::BTN_DPAD_LEFT);
@@ -370,7 +371,7 @@ fn blinkoff() {
 
 fn get_volume() -> u32 {
     let output = Command::new("amixer")
-        .args(&["sget", "Playback"])
+        .args(&["sget", "Master"])
         .stdout(Stdio::piped())
         .output()
         .expect("Failed to execute amixer");
@@ -404,7 +405,7 @@ fn set_volume(volume: u32) {
     let volume_str = volume.to_string() + "%";
     //println!("Set volume level: {}", volume_str);
     Command::new("amixer")
-        .args(&["sset", "Playback", &volume_str])
+        .args(&["sset", "Master", &volume_str])
         .output()
         .expect("Failed to execute amixer");
 }
@@ -561,7 +562,7 @@ fn process_event(_dev: &Device, ev: &InputEvent, hotkey: bool) {
              hotkey);
     */
 
-    if ev.value == 1 {
+    if ev.value > 0 {
         /*
         println!("Event: time {}.{} type {} code {} value {} hotkey {}",
                 ev.time.tv_sec, ev.time.tv_usec, ev.event_type, ev.event_code,
@@ -600,7 +601,7 @@ fn process_event(_dev: &Device, ev: &InputEvent, hotkey: bool) {
                 wifi_on();
             } else if ev.event_code == WIFI_OFF && *ALLOW_WIFI {
                 wifi_off();
-            } else if ev.event_code == POWER && *ALLOW_SUSPEND {
+            } else if ev.event_code == POWER && ev.value == 1 {
                 power_off();
             }
         } else {
@@ -608,7 +609,7 @@ fn process_event(_dev: &Device, ev: &InputEvent, hotkey: bool) {
                 inc_volume();
             } else if ev.event_code == VOL_DOWN {
                 dec_volume();
-            } else if ev.event_code == POWER {
+            } else if ev.event_code == POWER && ev.value == 1 {
                 if *ALLOW_SUSPEND {
                     suspend();
                 }
@@ -620,7 +621,7 @@ fn process_event(_dev: &Device, ev: &InputEvent, hotkey: bool) {
         if ev.event_code == HEADPHONE_INSERT {
             headphone_insert();
         }
-    } else if ev.value == 0 {
+    } else {
         if ev.event_code == HEADPHONE_INSERT {
             headphone_remove();
         }
