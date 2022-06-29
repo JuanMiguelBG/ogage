@@ -3,25 +3,24 @@
 
 Global Hotkey: F Button
 
-R3 and Dpad Up = Brightness Up  
-R3 and Dpad Down = Brightness Down  
-R3 and Dpad Left = Dark on  
-R3 and Dpad Right = Dark off  
-R3 and Volume Up = Brightness Up (Can be held for continuous brightness increase)  
-R3 and Volume Down = Brightness Down (Can be held for continuous brightness decrease)  
+F and Dpad Up = Brightness Up  
+F and Dpad Down = Brightness Down  
+F and Dpad Left = Dark on  
+F and Dpad Right = Dark off  
+F and Volume Up = Brightness Up (Can be held for continuous brightness increase)  
+F and Volume Down = Brightness Down (Can be held for continuous brightness decrease)  
 
-R3 and X = Volume Up  
-R3 and B = Volume Down  
-R3 and Y = Mute  
-R3 and A = Volume 75%  
+F and X = Volume Up  
+F and B = Volume Down  
+F and Y = Mute  
+F and A = Volume 75%  
 
-R3 and L1 = Normal Performance  
-R3 and L2 = Max Performance  
+F and L1 = Toggle Bluetooth
 
-R3 and R1 = Wifi On  
-R3 and R2 = Wifi Off  
+F and R1 = Wifi On  
+F and R2 = Wifi Off  
 
-R3 and Power = Safely shutdown device  
+F and Power = Safely shutdown device  
 Power (Short Press) = Put device to sleep  
 
 -----

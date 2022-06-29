@@ -30,11 +30,12 @@ static VOL_UP_H:    EventCode = EventCode::EV_KEY(EV_KEY::BTN_NORTH);
 static VOL_DOWN_H:  EventCode = EventCode::EV_KEY(EV_KEY::BTN_SOUTH);
 static MUTE:        EventCode = EventCode::EV_KEY(EV_KEY::BTN_WEST);
 static VOL_NORM:    EventCode = EventCode::EV_KEY(EV_KEY::BTN_EAST);
-static PERF_MAX:  EventCode = EventCode::EV_KEY(EV_KEY::BTN_TL2);
-static PERF_NORM: EventCode = EventCode::EV_KEY(EV_KEY::BTN_TL);
-static WIFI_ON:   EventCode = EventCode::EV_KEY(EV_KEY::BTN_TR);
-static WIFI_OFF:  EventCode = EventCode::EV_KEY(EV_KEY::BTN_TR2);
-static POWER:     EventCode = EventCode::EV_KEY(EV_KEY::KEY_POWER);
+static BT_TRG:      EventCode = EventCode::EV_KEY(EV_KEY::BTN_TL);
+//static PERF_MAX:    EventCode = EventCode::EV_KEY(EV_KEY::BTN_TL2);
+//static PERF_NORM:   EventCode = EventCode::EV_KEY(EV_KEY::BTN_TL);
+static WIFI_ON:     EventCode = EventCode::EV_KEY(EV_KEY::BTN_TR);
+static WIFI_OFF:    EventCode = EventCode::EV_KEY(EV_KEY::BTN_TR2);
+static POWER:       EventCode = EventCode::EV_KEY(EV_KEY::KEY_POWER);
 static HEADPHONE_INSERT:  EventCode = EventCode::EV_SW(EV_SW::SW_HEADPHONE_INSERT);
 static OGAGE_CFG_FILE: &'static str = "/usr/local/etc/ogage.conf";
 static AUTO_SUSPEND_CFG_FILE: &'static str = "/usr/local/etc/auto_suspend.conf";
@@ -267,7 +268,7 @@ lazy_static! {
 
         true
     };
-
+/*
     static ref ALLOW_PERFORMANCE: bool = {
         if !OGAGE_PROPERTIES.is_empty() {
             match OGAGE_PROPERTIES.get("performance") {
@@ -282,10 +283,25 @@ lazy_static! {
 
         true
     };
-
+*/
     static ref ALLOW_SUSPEND: bool = {
         if !OGAGE_PROPERTIES.is_empty() {
             match OGAGE_PROPERTIES.get("suspend") {
+                Some(x) => {
+                    if x == "disabled" {
+                        return false;
+                    }
+                },
+                _ => ()
+            };
+        }
+
+        true
+    };
+
+    static ref ALLOW_BLUETOOTH: bool = {
+        if !OGAGE_PROPERTIES.is_empty() {
+            match OGAGE_PROPERTIES.get("bluetooth") {
                 Some(x) => {
                     if x == "disabled" {
                         return false;
@@ -461,7 +477,7 @@ fn mute_volume() {
 fn norm_volume() {
     set_volume(75);
 }
-
+/*
 fn perf_max() {
     Command::new("sudo")
         .args(&["perfmax", "On"])
@@ -477,7 +493,7 @@ fn perf_norm() {
         .expect("Failed to execute normal-performance");
     blinkoff();
 }
-
+*/
 fn dark_on() {
     set_brightness(10);
 }
@@ -551,6 +567,11 @@ fn headphone_remove() {
     Command::new("amixer").args(&["-q", "sset", "'Playback Path'", "SPK"]).output().expect("Failed to execute amixer to set 'SPK'");
 }
 
+fn toggle_bluetooth() {
+    Command::new("sudo").arg("bttoggle.sh").output().expect("Failed to execute bttoggle.sh");
+}
+
+
 fn process_event(_dev: &Device, ev: &InputEvent, hotkey: bool) {
     /*
     println!("Event: time {}.{} type {} code {} value {} hotkey {}",
@@ -589,10 +610,12 @@ fn process_event(_dev: &Device, ev: &InputEvent, hotkey: bool) {
                 mute_volume();
             } else if ev.event_code == VOL_NORM && *ALLOW_VOLUME {
                 norm_volume();
-            } else if ev.event_code == PERF_MAX && *ALLOW_PERFORMANCE {
+            /*} else if ev.event_code == PERF_MAX && *ALLOW_PERFORMANCE {
                 perf_max();
             } else if ev.event_code == PERF_NORM && *ALLOW_PERFORMANCE {
-                perf_norm();
+                perf_norm();*/
+            } else if ev.event_code == BT_TRG && *ALLOW_BLUETOOTH {
+                toggle_bluetooth();
             } else if ev.event_code == DARK_ON && *ALLOW_BRIGHTNESS {
                 dark_on();
             } else if ev.event_code == DARK_OFF && *ALLOW_BRIGHTNESS {
@@ -641,9 +664,11 @@ fn main() -> io::Result<()> {
     println!("Auto suspend: {}\nAuto suspend timeout: {:?}\nAuto suspend stay awake while charging: {}\nAuto dim: {}\nAuto dim timeout: {:?}\nAuto dim brightness: {}%\nAuto dim stay awake while charging: {}",
              *AUTO_SUSPEND_ENABLED, *AUTO_SUSPEND_TIMEOUT, *AUTO_SUSPEND_STAY_AWAKE_WHILE_CHARGING, *AUTO_DIM_ENABLED, *AUTO_DIM_TIMEOUT, *AUTO_DIM_BRIGHTNESS, *AUTO_DIM_STAY_AWAKE_WHILE_CHARGING);
 
-    println!("Allow brightness: {}\nBrightness step: {}%\nAllow volume: {}\nVolume step: {}%\nAllow wifi: {}\nAllow performance: {}\n", 
-        *ALLOW_BRIGHTNESS, *BRIGHTNESS_STEP, *ALLOW_VOLUME, *VOLUME_STEP, *ALLOW_WIFI, *ALLOW_PERFORMANCE);
-   
+//    println!("Allow brightness: {}\nBrightness step: {}%\nAllow volume: {}\nVolume step: {}%\nAllow wifi: {}\nAllow performance: {}\n", 
+//        *ALLOW_BRIGHTNESS, *BRIGHTNESS_STEP, *ALLOW_VOLUME, *VOLUME_STEP, *ALLOW_WIFI, *ALLOW_PERFORMANCE);
+    println!("Allow brightness: {}\nBrightness step: {}%\nAllow volume: {}\nVolume step: {}%\nAllow wifi: {}\nAllow bluetooth: {}\n", 
+        *ALLOW_BRIGHTNESS, *BRIGHTNESS_STEP, *ALLOW_VOLUME, *VOLUME_STEP, *ALLOW_WIFI, *ALLOW_BLUETOOTH);
+
     println!("Emulationstation Brighthness Lock File: {}", *ES_BRIGTHNESS_LOCK_FILE);
 
     let mut i = 0;
