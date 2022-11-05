@@ -228,6 +228,32 @@ lazy_static! {
         1
     };
 
+    static ref AMIXER_SCONTROL: &'static str = {
+        let output = Command::new("amixer")
+            .arg("scontrols")
+            .stdout(Stdio::piped())
+            .output()
+            .expect("Failed to execute amixer");
+
+        let amixer_str =
+            String::from_utf8(output.stdout).expect("Failed to convert stdout to string");
+        
+        if amixer_str.contains(" A2DP'") {
+            // Bluetooth Audio
+            let amixer_vector: Vec<&str> = amixer_str.split(&['\''][..]).collect();
+
+            if amixer_vector.len() > 2 {
+                //println!("Get Bluettooth ALSA Mixer Sound Control: {}", amixer_vector[1]);
+                let mut amixer_name : String = amixer_vector[1].trim().to_string();
+                amixer_name.insert(0, '\'');
+                amixer_name.push('\'');
+                return Box::leak(amixer_name.into_boxed_str());
+            }
+        }
+        
+        return "Master";
+    };
+
     static ref ALLOW_VOLUME: bool = {
         if !OGAGE_PROPERTIES.is_empty() {
             match OGAGE_PROPERTIES.get("volume") {
@@ -244,12 +270,29 @@ lazy_static! {
     };
 
     static ref VOLUME_STEP: u32 = {
+        //println!("VOLUME_STEP -> AMIXER_SCONTROL {}", *AMIXER_SCONTROL);
+
         if !OGAGE_PROPERTIES.is_empty() {
             match OGAGE_PROPERTIES.get("volume_step") {
-                Some(x) => return x.parse::<u32>().unwrap(),
+                Some(x) => 
+                {
+                    let mut value = x.parse::<u32>().unwrap();
+                    //println!("VOLUME_STEP -> step value {}", value);
+                    if value == 1 && "Master" != *AMIXER_SCONTROL {
+                        value = 2;
+                    }
+                    //println!("VOLUME_STEP -> final step value {}", value);
+                    return value;
+                },
                 _ => ()
             };
         }
+
+        if "Master" != *AMIXER_SCONTROL {
+            //println!("VOLUME_STEP -> NO MASTER AMIXER return: 2");
+            return 2;
+        }
+        //println!("VOLUME_STEP -> MASTER AMIXER return: 1");
 
         1
     };
@@ -324,7 +367,7 @@ lazy_static! {
             };
         }
 
-        "/home/odroid/.emulationstation/brightness.lock"
+        "/home/ark/.emulationstation/brightness.lock"
     };
 }
 
@@ -353,6 +396,7 @@ fn get_brightness() -> u32 {
 fn set_brightness(brightness: u32) {
     let brightness_str = brightness.to_string() + "%";
     //println!("Set brightness level: {}", brightness_str);
+    //println!("Set brightness command: brightnessctl s {}", *AMIXER_SCONTROL, brightness_str);
     Command::new("brightnessctl")
         .args(&["s", &brightness_str])
         .output()
@@ -387,7 +431,7 @@ fn blinkoff() {
 
 fn get_volume() -> u32 {
     let output = Command::new("amixer")
-        .args(&["sget", "Master"])
+        .args(&["sget", *AMIXER_SCONTROL])
         .stdout(Stdio::piped())
         .output()
         .expect("Failed to execute amixer");
@@ -420,8 +464,9 @@ fn get_volume() -> u32 {
 fn set_volume(volume: u32) {
     let volume_str = volume.to_string() + "%";
     //println!("Set volume level: {}", volume_str);
+    //println!("Set volume command: amixer sset {} {}", *AMIXER_SCONTROL, volume_str);
     Command::new("amixer")
-        .args(&["sset", "Master", &volume_str])
+        .args(&["sset", *AMIXER_SCONTROL, &volume_str])
         .output()
         .expect("Failed to execute amixer");
 }
@@ -668,7 +713,7 @@ fn main() -> io::Result<()> {
 //        *ALLOW_BRIGHTNESS, *BRIGHTNESS_STEP, *ALLOW_VOLUME, *VOLUME_STEP, *ALLOW_WIFI, *ALLOW_PERFORMANCE);
     println!("Allow brightness: {}\nBrightness step: {}%\nAllow volume: {}\nVolume step: {}%\nAllow wifi: {}\nAllow bluetooth: {}\n", 
         *ALLOW_BRIGHTNESS, *BRIGHTNESS_STEP, *ALLOW_VOLUME, *VOLUME_STEP, *ALLOW_WIFI, *ALLOW_BLUETOOTH);
-
+    println!("Bluettooth ALSA Mixer Sound Control: {}\n", *AMIXER_SCONTROL);
     println!("Emulationstation Brighthness Lock File: {}", *ES_BRIGTHNESS_LOCK_FILE);
 
     let mut i = 0;
