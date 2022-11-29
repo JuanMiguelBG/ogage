@@ -31,8 +31,7 @@ static VOL_DOWN_H:  EventCode = EventCode::EV_KEY(EV_KEY::BTN_SOUTH);
 static MUTE:        EventCode = EventCode::EV_KEY(EV_KEY::BTN_WEST);
 static VOL_NORM:    EventCode = EventCode::EV_KEY(EV_KEY::BTN_EAST);
 static BT_TRG:      EventCode = EventCode::EV_KEY(EV_KEY::BTN_TL);
-//static PERF_MAX:    EventCode = EventCode::EV_KEY(EV_KEY::BTN_TL2);
-//static PERF_NORM:   EventCode = EventCode::EV_KEY(EV_KEY::BTN_TL);
+static SPK_TRG:     EventCode = EventCode::EV_KEY(EV_KEY::BTN_TL2);
 static WIFI_ON:     EventCode = EventCode::EV_KEY(EV_KEY::BTN_TR);
 static WIFI_OFF:    EventCode = EventCode::EV_KEY(EV_KEY::BTN_TR2);
 static POWER:       EventCode = EventCode::EV_KEY(EV_KEY::KEY_POWER);
@@ -41,6 +40,8 @@ static OGAGE_CFG_FILE: &'static str = "/usr/local/etc/ogage.conf";
 static AUTO_SUSPEND_CFG_FILE: &'static str = "/usr/local/etc/auto_suspend.conf";
 static AUTO_DIM_CFG_FILE: &'static str = "/usr/local/etc/auto_dim.conf";
 static BATTERY_STATUS_FILE: &'static str = "/sys/class/power_supply/battery/status";
+static BLUETOOTH_SCRIP_PATH: &'static str = "/usr/local/bin/es-bluetooth";
+static AUDIO_SCRIP_PATH: &'static str = "/usr/local/bin/es-sound";
 
 enum BatteryStatus {
     Unknown,
@@ -311,22 +312,7 @@ lazy_static! {
 
         true
     };
-/*
-    static ref ALLOW_PERFORMANCE: bool = {
-        if !OGAGE_PROPERTIES.is_empty() {
-            match OGAGE_PROPERTIES.get("performance") {
-                Some(x) => {
-                    if x == "disabled" {
-                        return false;
-                    }
-                },
-                _ => ()
-            };
-        }
 
-        true
-    };
-*/
     static ref ALLOW_SUSPEND: bool = {
         if !OGAGE_PROPERTIES.is_empty() {
             match OGAGE_PROPERTIES.get("suspend") {
@@ -345,6 +331,21 @@ lazy_static! {
     static ref ALLOW_BLUETOOTH: bool = {
         if !OGAGE_PROPERTIES.is_empty() {
             match OGAGE_PROPERTIES.get("bluetooth") {
+                Some(x) => {
+                    if x == "disabled" {
+                        return false;
+                    }
+                },
+                _ => ()
+            };
+        }
+
+        true
+    };
+
+    static ref ALLOW_SPEAKER: bool = {
+        if !OGAGE_PROPERTIES.is_empty() {
+            match OGAGE_PROPERTIES.get("speaker") {
                 Some(x) => {
                     if x == "disabled" {
                         return false;
@@ -522,23 +523,7 @@ fn mute_volume() {
 fn norm_volume() {
     set_volume(75);
 }
-/*
-fn perf_max() {
-    Command::new("sudo")
-        .args(&["perfmax", "On"])
-        .output()
-        .expect("Failed to execute max-performance");
-    blinkon();
-}
 
-fn perf_norm() {
-    Command::new("sudo")
-        .arg("perfnorm")
-        .output()
-        .expect("Failed to execute normal-performance");
-    blinkoff();
-}
-*/
 fn dark_on() {
     set_brightness(10);
 }
@@ -605,17 +590,20 @@ fn remove_es_brightness_lock() {
 }
 
 fn headphone_insert() {
-    Command::new("amixer").args(&["-q", "sset", "'Playback Path'", "HP"]).output().expect("Failed to execute amixer to set 'HP'");
+    Command::new("es-sound").args(&["set", "output_device", "HP"]).output().expect("Failed to execute amixer to set 'HP'");
 }
 
 fn headphone_remove() {
-    Command::new("amixer").args(&["-q", "sset", "'Playback Path'", "SPK"]).output().expect("Failed to execute amixer to set 'SPK'");
+    Command::new("es-sound").args(&["set", "output_device", "SPK"]).output().expect("Failed to execute amixer to set 'SPK'");
 }
 
 fn toggle_bluetooth() {
-    Command::new("sudo").arg("bttoggle.sh").output().expect("Failed to execute bttoggle.sh");
+    Command::new(BLUETOOTH_SCRIP_PATH).arg("toggle").output().expect("Failed to execute bluetooth toggle");
 }
 
+fn toggle_speaker() {
+    Command::new(AUDIO_SCRIP_PATH).args(&["toggle"]).output().expect("Failed to toggle between Speaker and Headphone");
+}
 
 fn process_event(_dev: &Device, ev: &InputEvent, hotkey: bool) {
     /*
@@ -655,12 +643,10 @@ fn process_event(_dev: &Device, ev: &InputEvent, hotkey: bool) {
                 mute_volume();
             } else if ev.event_code == VOL_NORM && *ALLOW_VOLUME {
                 norm_volume();
-            /*} else if ev.event_code == PERF_MAX && *ALLOW_PERFORMANCE {
-                perf_max();
-            } else if ev.event_code == PERF_NORM && *ALLOW_PERFORMANCE {
-                perf_norm();*/
             } else if ev.event_code == BT_TRG && *ALLOW_BLUETOOTH {
                 toggle_bluetooth();
+            } else if ev.event_code == SPK_TRG && *ALLOW_SPEAKER {
+                toggle_speaker();
             } else if ev.event_code == DARK_ON && *ALLOW_BRIGHTNESS {
                 dark_on();
             } else if ev.event_code == DARK_OFF && *ALLOW_BRIGHTNESS {
