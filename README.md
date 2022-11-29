@@ -15,7 +15,8 @@ F and B = Volume Down
 F and Y = Mute  
 F and A = Volume 75%  
 
-F and L1 = Toggle Bluetooth
+F and L1 = Toggle Bluetooth  
+F and L2 = Toggle Speaker (Speaker/Headphone)  
 
 F and R1 = Wifi On  
 F and R2 = Wifi Off  
