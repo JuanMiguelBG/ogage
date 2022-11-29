@@ -590,11 +590,11 @@ fn remove_es_brightness_lock() {
 }
 
 fn headphone_insert() {
-    Command::new("es-sound").args(&["set", "output_device", "HP"]).output().expect("Failed to execute amixer to set 'HP'");
+    Command::new(AUDIO_SCRIP_PATH).args(&["set", "output_device", "HP"]).output().expect("Failed to execute amixer to set 'HP'");
 }
 
 fn headphone_remove() {
-    Command::new("es-sound").args(&["set", "output_device", "SPK"]).output().expect("Failed to execute amixer to set 'SPK'");
+    Command::new(AUDIO_SCRIP_PATH).args(&["set", "output_device", "SPK"]).output().expect("Failed to execute amixer to set 'SPK'");
 }
 
 fn toggle_bluetooth() {
