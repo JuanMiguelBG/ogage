@@ -673,12 +673,12 @@ fn process_event(_dev: &Device, ev: &InputEvent, hotkey: bool) {
             } 
         }
         if ev.event_code == HEADPHONE_INSERT {
-            println!("HEADPHONE INSERT EVENT");
+            //println!("HEADPHONE INSERT EVENT");
             headphone_insert();
         } 
     } else { // ev.value <= 0
         if ev.event_code == HEADPHONE_INSERT {
-            println!("HEADPHONE REMOVE EVENT");
+            //println!("HEADPHONE REMOVE EVENT");
             headphone_remove();
         }
     }
