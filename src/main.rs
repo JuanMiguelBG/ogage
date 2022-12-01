@@ -606,7 +606,7 @@ fn toggle_speaker() {
 }
 
 fn process_event(_dev: &Device, ev: &InputEvent, hotkey: bool) {
-    /*
+/*
     println!("Event: time {}.{} type {} code {} value {} hotkey {}",
              ev.time.tv_sec,
              ev.time.tv_usec,
@@ -614,7 +614,7 @@ fn process_event(_dev: &Device, ev: &InputEvent, hotkey: bool) {
              ev.event_code,
              ev.value,
              hotkey);
-    */
+*/
 
     if ev.value > 0 {
         /*
@@ -673,10 +673,12 @@ fn process_event(_dev: &Device, ev: &InputEvent, hotkey: bool) {
             } 
         }
         if ev.event_code == HEADPHONE_INSERT {
+            //println!("HEADPHONE INSERT EVENT");
             headphone_insert();
-        }
-    } else {
+        } 
+    } else { // ev.value <= 0
         if ev.event_code == HEADPHONE_INSERT {
+            //println!("HEADPHONE REMOVE EVENT");
             headphone_remove();
         }
     }
@@ -695,15 +697,21 @@ fn main() -> io::Result<()> {
     println!("Auto suspend: {}\nAuto suspend timeout: {:?}\nAuto suspend stay awake while charging: {}\nAuto dim: {}\nAuto dim timeout: {:?}\nAuto dim brightness: {}%\nAuto dim stay awake while charging: {}",
              *AUTO_SUSPEND_ENABLED, *AUTO_SUSPEND_TIMEOUT, *AUTO_SUSPEND_STAY_AWAKE_WHILE_CHARGING, *AUTO_DIM_ENABLED, *AUTO_DIM_TIMEOUT, *AUTO_DIM_BRIGHTNESS, *AUTO_DIM_STAY_AWAKE_WHILE_CHARGING);
 
-//    println!("Allow brightness: {}\nBrightness step: {}%\nAllow volume: {}\nVolume step: {}%\nAllow wifi: {}\nAllow performance: {}\n", 
-//        *ALLOW_BRIGHTNESS, *BRIGHTNESS_STEP, *ALLOW_VOLUME, *VOLUME_STEP, *ALLOW_WIFI, *ALLOW_PERFORMANCE);
-    println!("Allow brightness: {}\nBrightness step: {}%\nAllow volume: {}\nVolume step: {}%\nAllow wifi: {}\nAllow bluetooth: {}\n", 
-        *ALLOW_BRIGHTNESS, *BRIGHTNESS_STEP, *ALLOW_VOLUME, *VOLUME_STEP, *ALLOW_WIFI, *ALLOW_BLUETOOTH);
+    println!("Allow brightness: {}\nBrightness step: {}%\nAllow volume: {}\nVolume step: {}%\nAllow wifi: {}\nAllow bluetooth: {}\nAllow speaker: {}\nAllow suspend: {}\n", 
+        *ALLOW_BRIGHTNESS, *BRIGHTNESS_STEP, *ALLOW_VOLUME, *VOLUME_STEP, *ALLOW_WIFI, *ALLOW_BLUETOOTH, *ALLOW_SPEAKER, *ALLOW_SUSPEND);
+
     println!("Bluettooth ALSA Mixer Sound Control: {}\n", *AMIXER_SCONTROL);
-    println!("Emulationstation Brighthness Lock File: {}", *ES_BRIGTHNESS_LOCK_FILE);
+    println!("Emulationstation Brighthness Lock File: {}\n", *ES_BRIGTHNESS_LOCK_FILE);
 
     let mut i = 0;
     for s in [
+        "/dev/input/event10",
+        "/dev/input/event9",
+        "/dev/input/event8",
+        "/dev/input/event7",
+        "/dev/input/event6",
+        "/dev/input/event5",
+        "/dev/input/event4",
         "/dev/input/event3",
         "/dev/input/event2",
         "/dev/input/event0",
