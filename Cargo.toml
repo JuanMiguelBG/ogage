@@ -1,6 +1,6 @@
 [package]
 name = "ogage"
-version = "0.8.8"
+version = "0.8.9"
 authors = ["valadaa48 <valadaa48@gmx.com>"]
 edition = "2018"
 
