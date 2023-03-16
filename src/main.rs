@@ -42,6 +42,7 @@ static AUTO_DIM_CFG_FILE: &'static str = "/usr/local/etc/auto_dim.conf";
 static BATTERY_STATUS_FILE: &'static str = "/sys/class/power_supply/battery/status";
 static BLUETOOTH_SCRIP_PATH: &'static str = "/usr/local/bin/es-bluetooth";
 static AUDIO_SCRIP_PATH: &'static str = "/usr/local/bin/es-sound";
+static DISPLAY_SCRIP_PATH: &'static str = "/usr/local/bin/es-display";
 
 enum BatteryStatus {
     Unknown,
@@ -370,6 +371,19 @@ lazy_static! {
 
         "/home/ark/.emulationstation/brightness.lock"
     };
+
+    static ref IS_HDMI_MODE: bool = {
+        let status = Command::new(DISPLAY_SCRIP_PATH)
+            .arg("is_hdmi_mode")
+            .status()
+            .expect("Not HDMI mode");
+
+        if status.code() == Some(0) {
+            return true;
+        }
+
+        false
+    };
 }
 
 fn get_brightness() -> u32 {
@@ -405,6 +419,10 @@ fn set_brightness(brightness: u32) {
 }
 
 fn blinkon() {
+    if *IS_HDMI_MODE {
+        return;
+    }
+
     let current = get_brightness();
     create_es_brightness_lock();
     set_brightness(0);
@@ -421,6 +439,9 @@ fn blinkon() {
 }
 
 fn blinkoff() {
+    if *IS_HDMI_MODE {
+        return;
+    }
     let current = get_brightness();
     create_es_brightness_lock();
     set_brightness(0);
@@ -627,14 +648,18 @@ fn process_event(_dev: &Device, ev: &InputEvent, hotkey: bool) {
         */
 
         if hotkey {
-            if ev.event_code == BRIGHT_UP && *ALLOW_BRIGHTNESS {
+            if ev.event_code == BRIGHT_UP && *ALLOW_BRIGHTNESS && !*IS_HDMI_MODE {
                 inc_brightness();
-            } else if ev.event_code == BRIGHT_DOWN && *ALLOW_BRIGHTNESS {
+            } else if ev.event_code == BRIGHT_DOWN && *ALLOW_BRIGHTNESS && !*IS_HDMI_MODE {
                 dec_brightness();
-            } else if ev.event_code == VOL_UP && *ALLOW_BRIGHTNESS {
+            } else if ev.event_code == VOL_UP && *ALLOW_BRIGHTNESS && !*IS_HDMI_MODE {
                 inc_brightness();
-            } else if ev.event_code == VOL_DOWN && *ALLOW_BRIGHTNESS {
+            } else if ev.event_code == VOL_DOWN && *ALLOW_BRIGHTNESS && !*IS_HDMI_MODE {
                 dec_brightness();
+            } else if ev.event_code == DARK_ON && *ALLOW_BRIGHTNESS && !*IS_HDMI_MODE {
+                dark_on();
+            } else if ev.event_code == DARK_OFF && *ALLOW_BRIGHTNESS && !*IS_HDMI_MODE {
+                dark_off();
             } else if ev.event_code == VOL_UP_H && *ALLOW_VOLUME {
                 inc_volume();
             } else if ev.event_code == VOL_DOWN_H && *ALLOW_VOLUME {
@@ -647,10 +672,6 @@ fn process_event(_dev: &Device, ev: &InputEvent, hotkey: bool) {
                 toggle_bluetooth();
             } else if ev.event_code == SPK_TRG && *ALLOW_SPEAKER {
                 toggle_speaker();
-            } else if ev.event_code == DARK_ON && *ALLOW_BRIGHTNESS {
-                dark_on();
-            } else if ev.event_code == DARK_OFF && *ALLOW_BRIGHTNESS {
-                dark_off();
             } else if ev.event_code == WIFI_ON && *ALLOW_WIFI {
                 wifi_on();
             } else if ev.event_code == WIFI_OFF && *ALLOW_WIFI {
@@ -673,10 +694,12 @@ fn process_event(_dev: &Device, ev: &InputEvent, hotkey: bool) {
             } 
         }
         if ev.event_code == HEADPHONE_INSERT {
+            //println!("HEADPHONE INSERT EVENT");
             headphone_insert();
         }
-    } else {
+    } else { // ev.value <= 0
         if ev.event_code == HEADPHONE_INSERT {
+            //println!("HEADPHONE REMOVE EVENT");
             headphone_remove();
         }
     }
@@ -695,15 +718,22 @@ fn main() -> io::Result<()> {
     println!("Auto suspend: {}\nAuto suspend timeout: {:?}\nAuto suspend stay awake while charging: {}\nAuto dim: {}\nAuto dim timeout: {:?}\nAuto dim brightness: {}%\nAuto dim stay awake while charging: {}",
              *AUTO_SUSPEND_ENABLED, *AUTO_SUSPEND_TIMEOUT, *AUTO_SUSPEND_STAY_AWAKE_WHILE_CHARGING, *AUTO_DIM_ENABLED, *AUTO_DIM_TIMEOUT, *AUTO_DIM_BRIGHTNESS, *AUTO_DIM_STAY_AWAKE_WHILE_CHARGING);
 
-//    println!("Allow brightness: {}\nBrightness step: {}%\nAllow volume: {}\nVolume step: {}%\nAllow wifi: {}\nAllow performance: {}\n", 
-//        *ALLOW_BRIGHTNESS, *BRIGHTNESS_STEP, *ALLOW_VOLUME, *VOLUME_STEP, *ALLOW_WIFI, *ALLOW_PERFORMANCE);
-    println!("Allow brightness: {}\nBrightness step: {}%\nAllow volume: {}\nVolume step: {}%\nAllow wifi: {}\nAllow bluetooth: {}\n", 
-        *ALLOW_BRIGHTNESS, *BRIGHTNESS_STEP, *ALLOW_VOLUME, *VOLUME_STEP, *ALLOW_WIFI, *ALLOW_BLUETOOTH);
-    println!("Bluettooth ALSA Mixer Sound Control: {}\n", *AMIXER_SCONTROL);
-    println!("Emulationstation Brighthness Lock File: {}", *ES_BRIGTHNESS_LOCK_FILE);
+    println!("Allow brightness: {}\nBrightness step: {}%\nAllow volume: {}\nVolume step: {}%\nAllow wifi: {}\nAllow bluetooth: {}\nAllow speaker: {}\nAllow suspend: {}\n", 
+        *ALLOW_BRIGHTNESS, *BRIGHTNESS_STEP, *ALLOW_VOLUME, *VOLUME_STEP, *ALLOW_WIFI, *ALLOW_BLUETOOTH, *ALLOW_SPEAKER, *ALLOW_SUSPEND);
+
+    println!("ALSA Mixer Sound Control: {}\n", *AMIXER_SCONTROL);
+    println!("Emulationstation Brighthness Lock File: {}\n", *ES_BRIGTHNESS_LOCK_FILE);
+    println!("Is HDMI mode?: {}\n", *IS_HDMI_MODE);
 
     let mut i = 0;
     for s in [
+        "/dev/input/event10",
+        "/dev/input/event9",
+        "/dev/input/event8",
+        "/dev/input/event7",
+        "/dev/input/event6",
+        "/dev/input/event5",
+        "/dev/input/event4",
         "/dev/input/event3",
         "/dev/input/event2",
         "/dev/input/event0",
