@@ -53,7 +53,7 @@ sudo apt install brightnessctl rustc autotools-dev automake libtool libtool-bin 
 Build
 =====
 ```
-git clone https://github.com/JuanMiguelBG/ogage.git -b 503
+git clone https://github.com/JuanMiguelBG/ogage.git -b rg503
 cd ogage
 cargo build --release
 strip target/release/ogage
