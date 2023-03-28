@@ -1,5 +1,5 @@
 ## RG503
-![](./rg503.png)
+![](./rk2023.png)
 
 Global Hotkey: F Button
 
