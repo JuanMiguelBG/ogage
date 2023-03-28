@@ -1,27 +1,27 @@
-## RG503
+## RL2023
 ![](./rk2023.png)
 
-Global Hotkey: F Button
+Global Hotkey: R3 Button
 
-F and Dpad Up = Brightness Up  
-F and Dpad Down = Brightness Down  
-F and Dpad Left = Dark on  
-F and Dpad Right = Dark off  
-F and Volume Up = Brightness Up (Can be held for continuous brightness increase)  
-F and Volume Down = Brightness Down (Can be held for continuous brightness decrease)  
+R3 and Dpad Up = Brightness Up  
+R3 and Dpad Down = Brightness Down  
+R3 and Dpad Left = Dark on  
+R3 and Dpad Right = Dark off  
+R3 and Volume Up = Brightness Up (Can be held for continuous brightness increase)  
+R3 and Volume Down = Brightness Down (Can be held for continuous brightness decrease)  
 
-F and X = Volume Up  
-F and B = Volume Down  
-F and Y = Mute  
-F and A = Volume 75%  
+R3 and X = Volume Up  
+R3 and B = Volume Down  
+R3 and Y = Mute  
+R3 and A = Volume 75%  
 
-F and L1 = Toggle Bluetooth  
-F and L2 = Toggle Speaker (Speaker/Headphone)  
+R3 and L1 = Toggle Bluetooth  
+R3 and L2 = Toggle Speaker (Speaker/Headphone)  
 
-F and R1 = Wifi On  
-F and R2 = Wifi Off  
+R3 and R1 = Wifi On  
+R3 and R2 = Wifi Off  
 
-F and Power = Safely shutdown device  
+R3 and Power = Safely shutdown device  
 Power (Short Press) = Put device to sleep  
 
 -----
@@ -53,7 +53,7 @@ sudo apt install brightnessctl rustc autotools-dev automake libtool libtool-bin 
 Build
 =====
 ```
-git clone https://github.com/JuanMiguelBG/ogage.git -b rg503
+git clone https://github.com/JuanMiguelBG/ogage.git -b rk2023
 cd ogage
 cargo build --release
 strip target/release/ogage

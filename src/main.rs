@@ -18,8 +18,7 @@ use std::process::{Command, Stdio};
 use std::thread;
 use std::time::{Duration, SystemTime};
 
-//static HOTKEY:      EventCode = EventCode::EV_KEY(EV_KEY::BTN_THUMBR);
-static HOTKEY:      EventCode = EventCode::EV_KEY(EV_KEY::BTN_MODE);
+static HOTKEY:      EventCode = EventCode::EV_KEY(EV_KEY::BTN_THUMBR);
 static BRIGHT_UP:   EventCode = EventCode::EV_KEY(EV_KEY::BTN_DPAD_UP);
 static BRIGHT_DOWN: EventCode = EventCode::EV_KEY(EV_KEY::BTN_DPAD_DOWN);
 static DARK_ON:     EventCode = EventCode::EV_KEY(EV_KEY::BTN_DPAD_LEFT);
