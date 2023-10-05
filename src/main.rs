@@ -43,6 +43,7 @@ static BATTERY_STATUS_FILE: &'static str = "/sys/class/power_supply/battery/stat
 static BLUETOOTH_SCRIP_PATH: &'static str = "/usr/local/bin/es-bluetooth";
 static AUDIO_SCRIP_PATH: &'static str = "/usr/local/bin/es-sound";
 static DISPLAY_SCRIP_PATH: &'static str = "/usr/local/bin/es-display";
+static WIFI_SCRIP_PATH: &'static str = "/usr/local/bin/es-wifi";
 
 enum BatteryStatus {
     Unknown,
@@ -131,7 +132,7 @@ lazy_static! {
 
         HashMap::new()
     };
-    
+
     static ref AUTO_DIM_STAY_AWAKE_WHILE_CHARGING: bool = {
         if !AUTO_DIM_PROPERTIES.is_empty() {
             match AUTO_DIM_PROPERTIES.get("auto_dim_stay_awake_while_charging") {
@@ -239,7 +240,7 @@ lazy_static! {
 
         let amixer_str =
             String::from_utf8(output.stdout).expect("Failed to convert stdout to string");
-        
+
         if amixer_str.contains(" A2DP'") {
             // Bluetooth Audio
             let amixer_vector: Vec<&str> = amixer_str.split(&['\''][..]).collect();
@@ -252,7 +253,7 @@ lazy_static! {
                 return Box::leak(amixer_name.into_boxed_str());
             }
         }
-        
+
         return "Master";
     };
 
@@ -418,7 +419,7 @@ fn set_brightness(brightness: u32) {
         .expect("Failed to execute brightnessctl");
 }
 
-fn blinkon() {
+fn blink_on() {
     if *IS_HDMI_MODE {
         return;
     }
@@ -438,7 +439,7 @@ fn blinkon() {
     remove_es_brightness_lock();
 }
 
-fn blinkoff() {
+fn blink_off() {
     if *IS_HDMI_MODE {
         return;
     }
@@ -554,22 +555,17 @@ fn dark_off() {
 }
 
 fn wifi_on() {
-    blinkon();
-    Command::new("nmcli")
-        .args(&["radio", "wifi", "on"])
-        .output()
-        .expect("Failed to execute wifi on");
+    blink_on();
+    Command::new(WIFI_SCRIP_PATH).arg("enable").output().expect("Failed to execute enable wifi");
 }
 
 fn wifi_off() {
-    Command::new("nmcli")
-        .args(&["radio", "wifi", "off"])
-        .output()
-        .expect("Failed to execute wifi off");
-    blinkoff();
+    blink_on();
+    Command::new(WIFI_SCRIP_PATH).arg("disable").output().expect("Failed to execute disable wifi");
 }
 
 fn suspend() {
+    blink_on();
     Command::new("sudo")
         .args(&["systemctl", "suspend"])
         .output()
@@ -577,6 +573,7 @@ fn suspend() {
 }
 
 fn power_off() {
+    blink_on();
     Command::new("sudo")
         .args(&["shutdown", "-h", "now"])
         .output()
@@ -607,22 +604,26 @@ fn remove_es_brightness_lock() {
     if Path::new(*ES_BRIGTHNESS_LOCK_FILE).exists() {
         thread::sleep(Duration::from_millis(200));
         fs::remove_file(*ES_BRIGTHNESS_LOCK_FILE).expect("remove failed");
-    }    
+    }
 }
 
 fn headphone_insert() {
+    blink_on();
     Command::new(AUDIO_SCRIP_PATH).args(&["set", "output_device", "HP"]).output().expect("Failed to execute amixer to set 'HP'");
 }
 
 fn headphone_remove() {
+    blink_on();
     Command::new(AUDIO_SCRIP_PATH).args(&["set", "output_device", "SPK"]).output().expect("Failed to execute amixer to set 'SPK'");
 }
 
 fn toggle_bluetooth() {
+    blink_on();
     Command::new(BLUETOOTH_SCRIP_PATH).arg("toggle").output().expect("Failed to execute bluetooth toggle");
 }
 
 fn toggle_speaker() {
+    blink_on();
     Command::new(AUDIO_SCRIP_PATH).args(&["toggle"]).output().expect("Failed to toggle between Speaker and Headphone");
 }
 
@@ -691,12 +692,12 @@ fn process_event(_dev: &Device, ev: &InputEvent, hotkey: bool) {
                 else {
                     power_off();
                 }
-            } 
+            }
         }
         if ev.event_code == HEADPHONE_INSERT {
             //println!("HEADPHONE INSERT EVENT");
             headphone_insert();
-        } 
+        }
     } else { // ev.value <= 0
         if ev.event_code == HEADPHONE_INSERT {
             //println!("HEADPHONE REMOVE EVENT");
@@ -724,7 +725,7 @@ fn main() -> io::Result<()> {
     println!("ALSA Mixer Sound Control: {}\n", *AMIXER_SCONTROL);
     println!("Emulationstation Brighthness Lock File: {}\n", *ES_BRIGTHNESS_LOCK_FILE);
     println!("Is HDMI mode?: {}\n", *IS_HDMI_MODE);
-    
+
     let mut i = 0;
     for s in [
         "/dev/input/event10",
